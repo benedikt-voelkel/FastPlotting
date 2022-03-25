@@ -1,8 +1,5 @@
 """Handle ROOT as data source"""
 
-import sys
-from os.path import split
-
 import numpy as np
 
 from ROOT import TFile, TH1, TH2, TH3, TDirectory, TList
@@ -17,7 +14,7 @@ def convert_to_numpy(histogram):
 
     Right now only handle TH1<type>
     """
-    if isinstance(histogram, TH1) and (isinstance(histogram, TH2) or isinstance(histogram, TH3)):
+    if isinstance(histogram, TH1) and isinstance(histogram, (TH2, TH3)):
         ROOT_LOGGER.critical("At the moment can only handle TH1.")
 
     n_bins = histogram.GetNbinsX()
@@ -31,6 +28,14 @@ def convert_to_numpy(histogram):
 
 
 def get_histogram(root_object, root_path_list):
+    """Extract histogram from ROOT object
+
+    Args:
+        root_object: should either derived from TDirectory or TList
+            object holding our object of interest, potentially at some deeper level
+        root_path_list: iterable
+            going further down in the hierarchy
+    """
 
     next_in_list = root_path_list[0]
     finished = len(root_path_list) == 1
@@ -51,6 +56,8 @@ def get_histogram(root_object, root_path_list):
         if not this_list:
             ROOT_LOGGER.critical("Object not found")
         return get_histogram(this_list, root_path_list[1:])
+    ROOT_LOGGER.critical("Cannot handle ROOT object")
+    return None
 
 
 def read(filepath, histogram_path):

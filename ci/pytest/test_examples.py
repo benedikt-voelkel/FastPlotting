@@ -1,10 +1,12 @@
-import sys
+"""Base script for running all examples"""
+
 import importlib
 from glob import glob
 
 EXAMPLES_PATH="examples"
 
 def test_examples():
+    """top level test function"""
 
     passed = True
 
@@ -15,7 +17,7 @@ def test_examples():
         name = name.replace("/", ".")
         mod = importlib.import_module(name)
         try:
-            passed = passed and mod.run_example(False)
+            passed = passed and mod.run_example(False) # pylint: disable=broad-except
         except Exception as e:
             # if that cannot be executed for any reason, fail test
             print(e)

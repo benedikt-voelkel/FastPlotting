@@ -5,7 +5,8 @@ Classes:
         Holding core data in form of a numpy array and is identified by a name.
         In addition, it holds potential annotations
     DataAnnotations
-        Containing additional information such as a description of axes. One object is hold by DataWrapper
+        Containing additional information such as a description of axes.
+        One object is hold by DataWrapper
 """
 
 class DataAnnotations:

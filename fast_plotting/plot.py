@@ -17,12 +17,12 @@ def plot(config_batch):
     """
     figure, ax = plt.subplots(figsize=(30, 30))
 
-    for object in config_batch["objects"]:
-        data_wrapper = get_from_registry(object["identifier"])
+    for plot_object in config_batch["objects"]:
+        data_wrapper = get_from_registry(plot_object["identifier"])
         data = data_wrapper.data
         x = data[:,0]
         y = data[:,1]
-        ax.bar(x, y, alpha=0.4, label=object.get("label", "label"))
+        ax.bar(x, y, alpha=0.4, label=plot_object.get("label", "label"))
 
     ax.legend(loc="best", fontsize=30)
     ax.set_xlabel(config_batch.get("xlabel", "xlabel"), fontsize=30)

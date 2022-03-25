@@ -1,8 +1,6 @@
 """Top functionality to handle input data and register"""
 
-import sys
-
-from fast_plotting.data import DataAnnotations, DataWrapper
+from fast_plotting.data import DataWrapper
 from fast_plotting.sources.root import read as get_from_root
 from fast_plotting.io import parse_json
 from fast_plotting.logger import get_logger

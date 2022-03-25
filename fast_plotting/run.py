@@ -1,8 +1,9 @@
+"""Entry point"""
+
 import sys
 import argparse
 
 from fast_plotting.registry import read_from_config as read_data
-from fast_plotting.registry import print_registry
 from fast_plotting.plot import read_from_config as read_plots
 
 from fast_plotting.logger import get_logger
@@ -10,7 +11,7 @@ from fast_plotting.logger import get_logger
 MAIN_LOGGER = get_logger()
 
 def plot(args):
-
+    """Plot from cmd args"""
     MAIN_LOGGER.info("Run")
 
     read_data(args.config)

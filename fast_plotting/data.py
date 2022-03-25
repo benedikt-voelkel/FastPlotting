@@ -17,7 +17,7 @@ class DataAnnotations:
 
         For now only initialise some axis labels
         """
-        self.axis_labels = kwargs.pop("axis_labels", None)
+        self.axis_labels = kwargs.pop("axis_labels", [""] * 3)
 
 class DataWrapper:
     """Holding the actual data identified by name"""

@@ -64,10 +64,14 @@ def read_from_config(config):
         config: str
             apth to config JSON
     """
-    config = parse_json(config)
-
-    if "sources" not in config:
-        DATA_LOGGER.critical("No sources found")
-
-    for batch in config["sources"]:
+    # Only load objects we actually need
+    load_only_identifiers = []
+    for batch in config.get_plots():
+        if not batch["enable"]:
+            continue
+        for o in batch["objects"]:
+            load_only_identifiers.append(o["identifier"])
+    for batch in config.get_sources():
+        if batch["identifier"] not in load_only_identifiers:
+            continue
         get_data_from_source(batch)

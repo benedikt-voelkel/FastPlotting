@@ -9,6 +9,12 @@ Classes:
         One object is hold by DataWrapper
 """
 
+import numpy as np
+
+from fast_plotting.logger import get_logger
+
+DATA_LOGGER = get_logger("Data")
+
 class DataAnnotations:
     """Holding data annotations"""
 
@@ -28,5 +34,14 @@ class DataWrapper:
         self.name = name
         # numpy array of data
         self.data = data
+        # uncertainties
+        self.uncertainties = kwargs.pop("uncertainties", None)
+        shape_expected = (2 for _ in range(data.shape[1]))
+        shape_expected = (data.shape[0], *shape_expected)
+        if self.uncertainties is None:
+            self.uncertainties = np.full(shape_expected, 0.)
+        if shape_expected != self.uncertainties.shape:
+            # critical if shapes don't match
+            DATA_LOGGER.critical("Got incompatible shapes of data and uncertainties %s (expected) vs. %s (given)", f"{shape_expected}", f"{self.uncertainties.shape}")
         # annotations
         self.data_annotations = kwargs.pop("data_annotations", DataAnnotations(axis_labels=["label"] * data.shape[1]))

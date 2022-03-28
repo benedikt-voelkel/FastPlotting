@@ -51,8 +51,8 @@ def get_data_from_source(batch):
     if source_name == "root":
         if "filepath" not in batch or "rootpath" not in batch:
             DATA_LOGGER.critical("Need filepath and path to object inside ROOT file")
-        data, data_annotations = get_from_root(batch["filepath"], batch["rootpath"])
-        data_wrapper = DataWrapper(identifier, data, data_annotations=data_annotations)
+        data, uncertainties, data_annotations = get_from_root(batch["filepath"], batch["rootpath"])
+        data_wrapper = DataWrapper(identifier, data, data_annotations=data_annotations, uncertainties=uncertainties)
         add_to_registry(identifier, data_wrapper)
     else:
         DATA_LOGGER.critical("Cannot digest from source %s", source_name)

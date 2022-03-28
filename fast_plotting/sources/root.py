@@ -19,12 +19,15 @@ def convert_to_numpy(histogram):
 
     n_bins = histogram.GetNbinsX()
     data = np.full((n_bins, 2), 0.)
+    uncertainties = np.full((n_bins, 2, 2), 0.)
 
     axis = histogram.GetXaxis()
     for i in range(1, n_bins + 1):
         data[i-1][:] = [axis.GetBinCenter(i), histogram.GetBinContent(i)]
+        uncertainties[i-1][1][:] = [histogram.GetBinError(i), histogram.GetBinError(i)]
+        #uncertainties[i-1][1][:] = [1000, 1000]
 
-    return data
+    return data, uncertainties
 
 def get_histogram(root_object, root_path_list):
     """Extract histogram from ROOT object
@@ -80,7 +83,7 @@ def read(filepath, histogram_path):
     data_annotations = DataAnnotations(axis_labels=axis_labels)
 
     # convert to numpy and return together with annotations
-    return convert_to_numpy(histogram), data_annotations
+    return *convert_to_numpy(histogram), data_annotations
 
 def extract_impl(root_object, current_path, collect):
     current_path += f"/{root_object.GetName()}"

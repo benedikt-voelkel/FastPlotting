@@ -1,6 +1,7 @@
 """Functionality to manage I/O"""
 
-from os.path import expanduser, isfile
+from os.path import expanduser, isfile, isdir, exists
+from os import makedirs
 import json
 
 from fast_plotting.logger import get_logger
@@ -21,3 +22,10 @@ def dump_json(to_json, filepath):
     filepath = expanduser(filepath)
     with open(filepath, 'w') as f:
         json.dump(to_json, f, indent=2)
+
+def make_dir(name):
+    if exists(name):
+        if not isdir(name):
+            IO_LOGGER.critical("There seems to exist a file which has the same name as your chosen output directory %s. Cannot proceed", name)
+        return
+    makedirs(name)

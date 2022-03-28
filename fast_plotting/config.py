@@ -24,7 +24,6 @@ class Config:
             return
         self._config = {"sources": [], "plots": []}
 
-
     def read(self, path):
         if self._config is not None:
             CONFIG_LOGGER.warning("Overwriting existing configuration")
@@ -57,6 +56,10 @@ class Config:
             return []
         return self._config["plots"]
 
+    def enable_plots(self, value):
+        self.__initialise()
+        for c in self._config["plots"]:
+            c["enable"] = value
 
 def configure_from_sources(sources, labels=None):
     if labels and len(sources) != len(labels):

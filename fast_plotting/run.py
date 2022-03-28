@@ -4,8 +4,8 @@ import sys
 import argparse
 
 from fast_plotting.config import Config, configure_from_sources
-from fast_plotting.registry import read_from_config as read_data
-from fast_plotting.plot import read_from_config as read_plots
+from fast_plotting.registry import read_from_config
+from fast_plotting.plot import plot as plot_impl
 from fast_plotting.plot import add_plot_for_each_source, add_overlay_plot_for_sources
 
 from fast_plotting.logger import get_logger
@@ -19,23 +19,22 @@ def plot(args):
     config = Config()
     config.read(args.config)
 
-    read_data(config)
-    read_plots(config)
+    read_from_config(config)
+    plot_impl(config, args.output)
 
     MAIN_LOGGER.info("Done")
 
     return 0
 
-
 def configure(args):
     config = configure_from_sources(args.files, args.labels)
     if args.single:
-        add_plot_for_each_source(config, args.labels)
+        add_plot_for_each_source(config)
     if args.overlay:
         add_overlay_plot_for_sources(config)
+    config.enable_plots(args.enable_plots)
     config.write(args.output)
     return 0
-
 
 def main():
     """
@@ -50,7 +49,8 @@ def main():
 
     plot_parser = sub_parsers.add_parser("plot", parents=[common_debug_parser])
     plot_parser.set_defaults(func=plot)
-    plot_parser.add_argument("config", help="plot configuration")
+    plot_parser.add_argument("-c", "--config", help="plot configuration")
+    plot_parser.add_argument("-o", "--output", help="Top directory where to save plots", default="./")
 
     config_parser = sub_parsers.add_parser("configure", parents=[common_debug_parser])
     config_parser.set_defaults(func=configure)
@@ -59,12 +59,11 @@ def main():
     config_parser.add_argument("-o", "--output", help="Where to write the derived JSON configuration", default="config.json")
     config_parser.add_argument("--overlay", help="If the sources have the same structure, make overlay plots", action="store_true")
     config_parser.add_argument("--single", help="Make single plots for each source found", action="store_true")
-
+    config_parser.add_argument("--enable-plots", dest="enable_plots", help="Enable all plots by default", action="store_true")
 
     args = main_parser.parse_args()
 
     return args.func(args)
-
 
 if __name__ == "__main__":
     sys.exit(main())

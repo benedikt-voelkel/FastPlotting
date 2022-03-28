@@ -1,10 +1,12 @@
 """Plotting classes and functionality"""
 
+from math import sqrt
+from os.path import join
 import matplotlib.pyplot as plt
 
 from fast_plotting.registry import get_from_registry
 from fast_plotting.logger import get_logger
-from fast_plotting.io import parse_json
+from fast_plotting.io import parse_json, make_dir
 
 PLOT_LOGGER = get_logger("Plot")
 
@@ -14,7 +16,7 @@ PLOT_TYPE_LINE = "line"
 PLOT_TYPES = (PLOT_TYPE_BAR, PLOT_TYPE_SCATTER, PLOT_TYPE_LINE)
 
 
-def plot_single_1d(x, y, label, ax, plot_type=PLOT_TYPE_BAR):
+def plot_single_1d(x, y, label, ax, plot_type=PLOT_TYPE_BAR, xerr=None, yerr=None):
     """Put a single object on axes"""
     if plot_type not in PLOT_TYPES:
         PLOT_LOGGER.error("Cannot handle plot type %s", plot_type)
@@ -23,11 +25,17 @@ def plot_single_1d(x, y, label, ax, plot_type=PLOT_TYPE_BAR):
     if plot_type == PLOT_TYPE_BAR:
         ax.bar(x, y, alpha=0.4, label=label)
     elif plot_type == PLOT_TYPE_SCATTER:
-        ax.scatter(x, y, alpha=0.4, label=label)
+        # derive marker sizes from figure dimensions
+        fig = ax.get_figure()
+        # get size in pixels
+        marker_sizes = fig.get_size_inches() * fig.dpi * 0.1
+        p = ax.scatter(x, y, label=label, s=sqrt(marker_sizes[0]**2 + marker_sizes[1]**2))
+        c = p.get_facecolor()
+        ax.errorbar(x, y, yerr=yerr, lw=2, fmt="None", elinewidth=3, c=c)
     elif plot_type == PLOT_TYPE_LINE:
         ax.plot(x, y, alpha=0.4, label=label)
 
-def plot(config_batch):
+def plot_single(config_batch, out_dir="./"):
     """Plot from a config batch
 
     Args:
@@ -42,12 +50,17 @@ def plot(config_batch):
     for plot_object in config_batch["objects"]:
         data_wrapper = get_from_registry(plot_object["identifier"])
         data = data_wrapper.data
+        uncertainties = data_wrapper.uncertainties
         data_annotations = data_wrapper.data_annotations
         # TODO Really only 1d data at the moment
         x = data[:,0]
         y = data[:,1]
-        plot_type = plot_object.get("type", PLOT_TYPE_BAR)
-        plot_single_1d(x, y, plot_object.get("label", "label"), ax, plot_type)
+        xerr, yerr = (None, None)
+        if uncertainties is not None:
+            xerr = uncertainties[:,0,:].T
+            yerr = uncertainties[:,1,:].T
+        plot_type = plot_object.get("type", PLOT_TYPE_SCATTER)
+        plot_single_1d(x, y, plot_object.get("label", "label"), ax, plot_type, xerr=xerr, yerr=yerr)
 
     ax.legend(loc="best", fontsize=30)
     ax.set_xlabel(config_batch.get("xlabel", data_annotations.axis_labels[0]), fontsize=30)
@@ -55,21 +68,24 @@ def plot(config_batch):
     ax.tick_params("both", labelsize=30)
 
     figure.tight_layout()
-    figure.savefig(config_batch["output"])
+    save_path = join(out_dir, config_batch["output"])
+    figure.savefig(save_path)
     plt.close(figure)
 
-    PLOT_LOGGER.info("Plotted at %s", config_batch["output"])
+    PLOT_LOGGER.info("Plotted at %s", save_path)
 
-def read_from_config(config):
+def plot(config, out_dir="./"):
     """Read from a JSON config
 
     Args:
         config: str
             apth to config JSON
+        out_dir: str
+            desired output directory
     """
-
+    make_dir(out_dir)
     for batch in config.get_plots():
-        plot(batch)
+        plot_single(batch, out_dir)
 
 def add_plot_for_each_source(config):
     """Add a plot dictionary for each source automatically"""

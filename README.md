@@ -35,3 +35,4 @@ Now enable the ones you want to have plotted again and run
 ```bash
 python <path/to>/FastPlotting/fast_plotting/run.py plot config.json
 ```
+As mentioned above, all plots after an automatic generations are disabled. But they can be enabled during configuration time by adding the flag `--enable-plots`.

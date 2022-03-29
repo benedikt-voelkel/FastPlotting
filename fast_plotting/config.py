@@ -62,7 +62,7 @@ class Config:
         enable_all = "all" in identifiers
         for c in self._config["plots"]:
             if enable_all or c["identifier"] in identifiers:
-                c["enable"] = value
+                c["enable"] = True
 
 def configure_from_sources(sources, labels=None):
     if labels and len(sources) != len(labels):

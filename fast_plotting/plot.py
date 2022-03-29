@@ -23,7 +23,9 @@ def plot_single_1d(x, y, label, ax, plot_type=PLOT_TYPE_BAR, xerr=None, yerr=Non
         return
 
     if plot_type == PLOT_TYPE_BAR:
-        ax.bar(x, y, alpha=0.4, label=label)
+        range_x = max(x) - min(x)
+        width = range_x / len(x)
+        ax.bar(x, y, alpha=0.4, width=width, label=label)
     elif plot_type == PLOT_TYPE_SCATTER:
         # derive marker sizes from figure dimensions
         fig = ax.get_figure()
@@ -59,7 +61,7 @@ def plot_single(config_batch, out_dir="./"):
         if uncertainties is not None:
             xerr = uncertainties[:,0,:].T
             yerr = uncertainties[:,1,:].T
-        plot_type = plot_object.get("type", PLOT_TYPE_SCATTER)
+        plot_type = plot_object.get("type", PLOT_TYPE_BAR)
         plot_single_1d(x, y, plot_object.get("label", "label"), ax, plot_type, xerr=xerr, yerr=yerr)
 
     ax.legend(loc="best", fontsize=30)
@@ -90,7 +92,7 @@ def plot(config, out_dir="./"):
 def add_plot_for_each_source(config):
     """Add a plot dictionary for each source automatically"""
     for s in config.get_sources():
-        config.add_plot(objects=[{"identifier": s["identifier"], "type": PLOT_TYPE_SCATTER, "label": s.get("label", "")}], enable=False, output=f"{s['identifier']}.png")
+        config.add_plot(objects=[{"identifier": s["identifier"], "type": PLOT_TYPE_BAR, "label": s.get("label", "")}], enable=False, output=f"{s['identifier']}.png")
 
 def add_overlay_plot_for_sources(config):
     """Make overlay plots if possible"""
@@ -100,6 +102,6 @@ def add_overlay_plot_for_sources(config):
         identifier_key = "_".join(identifier.split("_")[:-1])
         if identifier_key not in objects:
             objects[identifier_key] = []
-        objects[identifier_key].append({"identifier": identifier, "type": PLOT_TYPE_SCATTER, "label": s.get("label", "")})
+        objects[identifier_key].append({"identifier": identifier, "type": PLOT_TYPE_BAR, "label": s.get("label", "")})
     for k, o in objects.items():
         config.add_plot(objects=o, enable=False, output=f"{k}.png")

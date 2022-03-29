@@ -23,7 +23,7 @@ def plot_single_1d(x, y, label, ax, plot_type=PLOT_TYPE_STEP, xerr=None, yerr=No
         PLOT_LOGGER.error("Cannot handle plot type %s", plot_type)
         return
 
-    if plot_type == PLOT_TYPE_STEP:
+    if plot_type == PLOT_TYPE_BAR:
         range_x = max(x) - min(x)
         width = range_x / len(x)
         ax.bar(x, y, alpha=0.4, width=width, label=label)

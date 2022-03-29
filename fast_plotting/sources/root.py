@@ -25,7 +25,6 @@ def convert_to_numpy(histogram):
     for i in range(1, n_bins + 1):
         data[i-1][:] = [axis.GetBinCenter(i), histogram.GetBinContent(i)]
         uncertainties[i-1][1][:] = [histogram.GetBinError(i), histogram.GetBinError(i)]
-        #uncertainties[i-1][1][:] = [1000, 1000]
 
     return data, uncertainties
 
@@ -45,6 +44,7 @@ def get_histogram(root_object, root_path_list):
             h = root_object.Get(next_in_list)
             if not h:
                 ROOT_LOGGER.critical("Object not found")
+            return h
         return get_histogram(root_object.Get(next_in_list), root_path_list[1:])
     if isinstance(root_object, TList):
         this_list = None
@@ -83,10 +83,12 @@ def read(filepath, histogram_path):
     data_annotations = DataAnnotations(axis_labels=axis_labels)
 
     # convert to numpy and return together with annotations
-    return *convert_to_numpy(histogram), data_annotations
+    data, uncertainties = convert_to_numpy(histogram)
+    return data, uncertainties, data_annotations
 
-def extract_impl(root_object, current_path, collect):
-    current_path += f"/{root_object.GetName()}"
+def extract_impl(root_object, current_path, collect, skip_this_name=False):
+    if not skip_this_name:
+        current_path += f"/{root_object.GetName()}"
     if isinstance(root_object, TH1) and not isinstance(root_object, (TH2, TH3)):
         # Collect only what we can handle at the moment
         collect.append(current_path[1:])
@@ -105,12 +107,10 @@ def extract_from_source(filepath):
 
     collect = []
 
-    extract_impl(f, "", collect)
+    extract_impl(f, "", collect, True)
 
     batches = []
     for i, c in enumerate(collect):
-        rootpath = c.split("/")
-        rootpath = "/".join(rootpath[1:])
-        batches.append({"source_name": "root", "identifier": rootpath.replace("/", "_"), "filepath": filepath, "rootpath": rootpath})
+        batches.append({"source_name": "root", "identifier": c.replace("/", "_"), "filepath": filepath, "rootpath": c})
 
     return batches

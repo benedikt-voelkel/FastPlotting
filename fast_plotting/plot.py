@@ -74,7 +74,7 @@ def plot_single(config_batch, out_dir="./"):
     figure.savefig(save_path)
     plt.close(figure)
 
-    PLOT_LOGGER.info("Plotted at %s", save_path)
+    PLOT_LOGGER.debug("Plotted at %s", save_path)
 
 def plot(config, out_dir="./"):
     """Read from a JSON config

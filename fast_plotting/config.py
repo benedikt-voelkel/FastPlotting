@@ -35,6 +35,7 @@ class Config:
             CONFIG_LOGGER.warning("No configuration to write")
             return
         dump_json(self._config, path)
+        CONFIG_LOGGER.info("Written configuration to %s", path)
 
     def add_data_source(self, source_name, identifier, **kwargs):
         self.__initialise()
@@ -56,10 +57,12 @@ class Config:
             return []
         return self._config["plots"]
 
-    def enable_plots(self, value):
+    def enable_plots(self, *identifiers):
         self.__initialise()
+        enable_all = "all" in identifiers
         for c in self._config["plots"]:
-            c["enable"] = value
+            if enable_all or c["identifier"] in identifiers:
+                c["enable"] = value
 
 def configure_from_sources(sources, labels=None):
     if labels and len(sources) != len(labels):

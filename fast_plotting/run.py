@@ -32,7 +32,7 @@ def configure(args):
         add_plot_for_each_source(config)
     if args.overlay:
         add_overlay_plot_for_sources(config)
-    config.enable_plots(args.enable_plots)
+    config.enable_plots(*args.enable_plots)
     config.write(args.output)
     return 0
 
@@ -59,7 +59,7 @@ def main():
     config_parser.add_argument("-o", "--output", help="Where to write the derived JSON configuration", default="config.json")
     config_parser.add_argument("--overlay", help="If the sources have the same structure, make overlay plots", action="store_true")
     config_parser.add_argument("--single", help="Make single plots for each source found", action="store_true")
-    config_parser.add_argument("--enable-plots", dest="enable_plots", help="Enable all plots by default", action="store_true")
+    config_parser.add_argument("--enable-plots", dest="enable_plots", nargs="+", help="Enable plots (pass \"all\" to enable all plots)")
 
     args = main_parser.parse_args()
 

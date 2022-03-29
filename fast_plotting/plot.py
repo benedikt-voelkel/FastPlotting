@@ -13,16 +13,17 @@ PLOT_LOGGER = get_logger("Plot")
 PLOT_TYPE_BAR = "bar"
 PLOT_TYPE_SCATTER = "scatter"
 PLOT_TYPE_LINE = "line"
-PLOT_TYPES = (PLOT_TYPE_BAR, PLOT_TYPE_SCATTER, PLOT_TYPE_LINE)
+PLOT_TYPE_STEP = "step"
+PLOT_TYPES = (PLOT_TYPE_BAR, PLOT_TYPE_SCATTER, PLOT_TYPE_LINE, PLOT_TYPE_STEP)
 
 
-def plot_single_1d(x, y, label, ax, plot_type=PLOT_TYPE_BAR, xerr=None, yerr=None):
+def plot_single_1d(x, y, label, ax, plot_type=PLOT_TYPE_STEP, xerr=None, yerr=None):
     """Put a single object on axes"""
     if plot_type not in PLOT_TYPES:
         PLOT_LOGGER.error("Cannot handle plot type %s", plot_type)
         return
 
-    if plot_type == PLOT_TYPE_BAR:
+    if plot_type == PLOT_TYPE_STEP:
         range_x = max(x) - min(x)
         width = range_x / len(x)
         ax.bar(x, y, alpha=0.4, width=width, label=label)
@@ -36,6 +37,8 @@ def plot_single_1d(x, y, label, ax, plot_type=PLOT_TYPE_BAR, xerr=None, yerr=Non
         ax.errorbar(x, y, yerr=yerr, lw=2, fmt="None", elinewidth=3, c=c)
     elif plot_type == PLOT_TYPE_LINE:
         ax.plot(x, y, alpha=0.4, label=label)
+    elif plot_type == PLOT_TYPE_STEP:
+        ax.step(x, y, where="mid", label=label, lw=2)
 
 def plot_single(config_batch, out_dir="./"):
     """Plot from a config batch
@@ -61,7 +64,7 @@ def plot_single(config_batch, out_dir="./"):
         if uncertainties is not None:
             xerr = uncertainties[:,0,:].T
             yerr = uncertainties[:,1,:].T
-        plot_type = plot_object.get("type", PLOT_TYPE_BAR)
+        plot_type = plot_object.get("type", PLOT_TYPE_STEP)
         plot_single_1d(x, y, plot_object.get("label", "label"), ax, plot_type, xerr=xerr, yerr=yerr)
 
     ax.legend(loc="best", fontsize=30)
@@ -92,7 +95,7 @@ def plot(config, out_dir="./"):
 def add_plot_for_each_source(config):
     """Add a plot dictionary for each source automatically"""
     for s in config.get_sources():
-        config.add_plot(objects=[{"identifier": s["identifier"], "type": PLOT_TYPE_BAR, "label": s.get("label", "")}], enable=False, output=f"{s['identifier']}.png")
+        config.add_plot(identifier=s["identifier"], objects=[{"identifier": s["identifier"], "type": PLOT_TYPE_STEP, "label": s.get("label", "")}], enable=False, output=f"{s['identifier']}.png")
 
 def add_overlay_plot_for_sources(config):
     """Make overlay plots if possible"""
@@ -102,6 +105,6 @@ def add_overlay_plot_for_sources(config):
         identifier_key = "_".join(identifier.split("_")[:-1])
         if identifier_key not in objects:
             objects[identifier_key] = []
-        objects[identifier_key].append({"identifier": identifier, "type": PLOT_TYPE_BAR, "label": s.get("label", "")})
+        objects[identifier_key].append({"identifier": identifier, "type": PLOT_TYPE_STEP, "label": s.get("label", "")})
     for k, o in objects.items():
-        config.add_plot(objects=o, enable=False, output=f"{k}.png")
+        config.add_plot(identifier=k, objects=o, enable=False, output=f"{k}.png")

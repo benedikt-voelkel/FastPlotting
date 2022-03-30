@@ -17,45 +17,45 @@ def convert_to_numpy_1d(histogram):
     data = np.full((n_bins, 2), 0.)
     uncertainties = np.full((n_bins, 2, 2), 0.)
     # Need one element more cause N+1 bin edges
-    bin_edges = np.full((n_bins + 1, 2), np.nan, dtype=float)
+    bin_edges = np.full((n_bins + 1, 1), np.nan, dtype=float)
 
     axis = histogram.GetXaxis()
     for i in range(1, n_bins + 1):
         data[i-1][:] = [axis.GetBinCenter(i), histogram.GetBinContent(i)]
         uncertainties[i-1][1][:] = [histogram.GetBinError(i), histogram.GetBinError(i)]
-        bin_edges[i-1][0] = axis.GetBinLowEdge(i)
+        bin_edges[i-1] = axis.GetBinLowEdge(i)
         if i == n_bins:
-            bin_edges[i][0] = axis.GetBinUpEdge(i)
+            bin_edges[i] = axis.GetBinUpEdge(i)
 
-    return data, uncertainties, bin_edges
+    return data, uncertainties, [bin_edges]
 
-
-
-def convert_to_numpy_1d(histogram):
+def convert_to_numpy_2d(histogram):
     """Convert to the numpy for TH1"""
 
     n_bins_x = histogram.GetNbinsX()
     n_bins_y = histogram.GetNbinsY()
     n_bins = n_bins_x * n_bins_y
 
-    data = np.full((n_bins, 3), 0.)
-    uncertainties = np.full((n_bins, 3, 2), 0.)
+    data = np.full((n_bins_x, n_bins_y, 3), 0.)
+    uncertainties = np.full((n_bins_x, n_bins_y, 3, 2), 0.)
     # Need one element more cause N+1 bin edges
-    bin_edges = np.full((n_bins + 1, 3), np.nan, dtype=float)
+    bin_edges = [np.full((n_bins_x + 1), np.nan, dtype=float), np.full((n_bins_y + 1), np.nan, dtype=float)]
 
     axis_x = histogram.GetXaxis()
-    axis_y = histogram.GetXaxis()
+    axis_y = histogram.GetYaxis()
     for i in range(1, n_bins_x + 1):
+        bin_edges[0][i-1] = axis.GetBinLowEdge(i)
+        if i == n_bins_x:
+            bin_edges[0][i] = axis.GetBinUpEdge(i)
         for j in range(1, n_bins_y + 1):
-            bin = i * j
-            data[bin-1][:] = [axis_x.GetBinCenter(i), axis_y.GetBinCenter(j), histogram.GetBinContent(bin)]
-            uncertainties[bin-1][1][:] = [histogram.GetBinError(i), histogram.GetBinError(i)]
-            bin_edges[i-1][0] = axis.GetBinLowEdge(i)
-            if i == n_bins:
-                bin_edges[i][0] = axis.GetBinUpEdge(i)
+            data[i-1,j-1,:] = [axis_x.GetBinCenter(i), axis_y.GetBinCenter(j), histogram.GetBinContent(i, j)]
+            uncertainties[i-1,j-1,2,:] = [histogram.GetBinError(i, j), histogram.GetBinError(i, j)]
+    for j in range(1, n_bins_y + 1):
+        bin_edges[1][j-1] = axis.GetBinLowEdge(j)
+        if j == n_bins_y:
+            bin_edges[1][j] = axis.GetBinUpEdge(j)
 
     return data, uncertainties, bin_edges
-
 
 def convert_to_numpy(histogram):
     """Convert to the numpy format we are using
@@ -125,8 +125,8 @@ def read(filepath, histogram_path):
     data_annotations = DataAnnotations(axis_labels=axis_labels)
 
     # convert to numpy and return together with annotations
-    data, uncertainties = convert_to_numpy(histogram)
-    return data, uncertainties, data_annotations
+    data, uncertainties, bin_edges = convert_to_numpy(histogram)
+    return data, uncertainties, bin_edges, data_annotations
 
 def extract_impl(root_object, current_path, collect, skip_this_name=False):
     if not skip_this_name:

@@ -43,5 +43,11 @@ class DataWrapper:
         if shape_expected != self.uncertainties.shape:
             # critical if shapes don't match
             DATA_LOGGER.critical("Got incompatible shapes of data and uncertainties %s (expected) vs. %s (given)", f"{shape_expected}", f"{self.uncertainties.shape}")
+        # optional binning
+        self.bin_edges = kwargs.pop("bin_edges", None)
+        if self.bin_edges:
+            if len(self.bin_edges) != self.data.shape[1] - 1:
+                DATA_LOGGER.critical("Invalid shape of bins, expecting for %d axes but got for %d axes insead", self.data.shape[1] - 1, len(self.bin_edges))
+            
         # annotations
         self.data_annotations = kwargs.pop("data_annotations", DataAnnotations(axis_labels=["label"] * data.shape[1]))

@@ -3,30 +3,27 @@
 import sys
 import argparse
 
-from fast_plotting.config import Config, configure_from_sources
+from fast_plotting.config import ConfigInterface, configure_from_sources
 from fast_plotting.registry import read_from_config
 from fast_plotting.plot import plot as plot_impl
 from fast_plotting.plot import add_plot_for_each_source, add_overlay_plot_for_sources
 
-from fast_plotting.logger import get_logger
+from fast_plotting.logger import get_logger, reconfigure_logging
 
 MAIN_LOGGER = get_logger()
 
 def plot(args):
     """Plot from cmd args"""
     MAIN_LOGGER.info("Run")
-
-    config = Config()
+    config = ConfigInterface()
     config.read(args.config)
-
     read_from_config(config)
-    plot_impl(config, args.output)
-
+    plot_impl(config, args.output, args.all_in_one)
     MAIN_LOGGER.info("Done")
-
     return 0
 
 def configure(args):
+    """create a configuration"""
     config = configure_from_sources(args.files, args.labels)
     if args.single:
         add_plot_for_each_source(config)
@@ -51,6 +48,7 @@ def main():
     plot_parser.set_defaults(func=plot)
     plot_parser.add_argument("-c", "--config", help="plot configuration")
     plot_parser.add_argument("-o", "--output", help="Top directory where to save plots", default="./")
+    plot_parser.add_argument("--all-in-one", dest="all_in_one", action="store_true", help="plot everything into one final figure")
 
     config_parser = sub_parsers.add_parser("configure", parents=[common_debug_parser])
     config_parser.set_defaults(func=configure)
@@ -59,9 +57,12 @@ def main():
     config_parser.add_argument("-o", "--output", help="Where to write the derived JSON configuration", default="config.json")
     config_parser.add_argument("--overlay", help="If the sources have the same structure, make overlay plots", action="store_true")
     config_parser.add_argument("--single", help="Make single plots for each source found", action="store_true")
-    config_parser.add_argument("--enable-plots", dest="enable_plots", nargs="+", help="Enable plots (pass \"all\" to enable all plots)")
+    config_parser.add_argument("--enable-plots", dest="enable_plots", nargs="+", help="Enable plots (pass \"all\" to enable all plots)", default=[])
 
     args = main_parser.parse_args()
+
+    # reconfigure in case user wants to enable debug messages
+    reconfigure_logging(args.debug)
 
     return args.func(args)
 

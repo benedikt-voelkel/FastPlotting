@@ -5,6 +5,7 @@ import logging
 import sys
 from copy import copy
 
+ENABLE_DEBUG = False
 
 class ExitHandler(logging.Handler):
     """
@@ -72,6 +73,16 @@ class FastPlottingLoggerFormatter(logging.Formatter):
         return logging.Formatter.format(self, cached_record)
 
 
+def reconfigure_logging(debug, *names):
+    if not names:
+        # set as default
+        ENABLE_DEBUG = debug
+        loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+    else:
+        loggers = [logging.getLogger(name) for name in names]
+    for l in loggers:
+        l.setLevel(logging.DEBUG)
+
 def configure_logger(name="FastPlottingBase", debug=False, logfile=None):
     """
     Basic configuration adding a custom formatted StreamHandler and turning on
@@ -82,7 +93,7 @@ def configure_logger(name="FastPlottingBase", debug=False, logfile=None):
         return
 
     # Turn on debug info only on request
-    if debug:
+    if debug or ENABLE_DEBUG:
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
@@ -104,10 +115,9 @@ def configure_logger(name="FastPlottingBase", debug=False, logfile=None):
     # logger flush before aborting
     logger.addHandler(ExitHandler(logging.CRITICAL))
 
-
 def get_logger(name="FastPlottingBase"):
     """
     Get the global logger for this package and set handler together with formatters.
     """
-    configure_logger(name, False, None)
+    configure_logger(name, ENABLE_DEBUG, None)
     return logging.getLogger(name)

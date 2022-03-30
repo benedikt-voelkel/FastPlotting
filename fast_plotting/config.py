@@ -7,7 +7,7 @@ from fast_plotting.sources.root import extract_from_source
 CONFIG_LOGGER = get_logger("Config")
 
 
-class Config:
+class ConfigInterface:
     def __init__(self):
         self._config = None
 
@@ -68,7 +68,7 @@ def configure_from_sources(sources, labels=None):
     if labels and len(sources) != len(labels):
         CONFIG_LOGGER.critical("Need same number of sources and labels, %d vs. %d", len(source), len(labels))
     extract_funcs = (extract_from_source,)
-    config = Config()
+    config = ConfigInterface()
     for i, (s, l) in enumerate(zip(sources, labels)):
         batches = None
         for ef in extract_funcs:

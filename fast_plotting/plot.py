@@ -91,6 +91,7 @@ def plot_single(config_batch, ax=None):
     ax.set_xlabel(finalise_label(config_batch.get("xlabel", f"{data_annotations.axis_labels[0]}")), fontsize=30)
     ax.set_ylabel(finalise_label(config_batch.get("ylabel", f"{data_annotations.axis_labels[1]}")), fontsize=30)
     ax.tick_params("both", labelsize=30)
+    ax.set_title(config_batch.get("title", ""), fontsize=30)
 
     return figure, ax
 
@@ -141,7 +142,7 @@ def plot(config, out_dir="./", all_in_one=False):
 def add_plot_for_each_source(config):
     """Add a plot dictionary for each source automatically"""
     for s in config.get_sources():
-        config.add_plot(identifier=s["identifier"], objects=[{"identifier": s["identifier"], "type": PLOT_TYPE_STEP, "label": s.get("label", "")}], enable=False, output=f"{s['identifier']}.png")
+        config.add_plot(identifier=s["identifier"], objects=[{"identifier": s["identifier"], "type": PLOT_TYPE_STEP, "label": s.get("label", "")}], title=s["identifier"], enable=False, output=f"{s['identifier']}.png")
 
 def add_overlay_plot_for_sources(config):
     """Make overlay plots if possible"""
@@ -153,4 +154,4 @@ def add_overlay_plot_for_sources(config):
             objects[identifier_key] = []
         objects[identifier_key].append({"identifier": identifier, "type": PLOT_TYPE_STEP, "label": s.get("label", "")})
     for k, o in objects.items():
-        config.add_plot(identifier=k, objects=o, enable=False, output=f"{k}.png")
+        config.add_plot(identifier=k, objects=o, title=k, enable=False, output=f"{k}.png")

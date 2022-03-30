@@ -15,7 +15,10 @@ def parse_json(filepath):
         IO_LOGGER.error("ERROR: JSON file %s does not exist.", filepath)
         return None
     with open(filepath, "r") as f:
-        return json.load(f)
+        try:
+            return json.load(f)
+        except (UnicodeDecodeError, json.decoder.JSONDecodeError):
+            return None
 
 def dump_json(to_json, filepath):
     """wrap JSON writing"""

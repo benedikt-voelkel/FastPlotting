@@ -80,8 +80,9 @@ def reconfigure_logging(debug, *names):
         loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
     else:
         loggers = [logging.getLogger(name) for name in names]
+    set_to = logging.DEBUG if debug else logging.INFO
     for l in loggers:
-        l.setLevel(logging.DEBUG)
+        l.setLevel(set_to)
 
 def configure_logger(name="FastPlottingBase", debug=False, logfile=None):
     """

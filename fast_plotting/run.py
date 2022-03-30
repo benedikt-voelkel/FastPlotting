@@ -3,7 +3,7 @@
 import sys
 import argparse
 
-from fast_plotting.config import ConfigInterface, configure_from_sources
+from fast_plotting.config import read_config, configure_from_sources
 from fast_plotting.registry import read_from_config
 from fast_plotting.plot import plot as plot_impl
 from fast_plotting.plot import add_plot_for_each_source, add_overlay_plot_for_sources
@@ -15,8 +15,7 @@ MAIN_LOGGER = get_logger()
 def plot(args):
     """Plot from cmd args"""
     MAIN_LOGGER.info("Run")
-    config = ConfigInterface()
-    config.read(args.config)
+    config = read_config(args.config)
     read_from_config(config)
     plot_impl(config, args.output, args.all_in_one)
     MAIN_LOGGER.info("Done")
@@ -24,14 +23,26 @@ def plot(args):
 
 def configure(args):
     """create a configuration"""
-    config = configure_from_sources(args.files, args.labels)
-    if args.single:
-        add_plot_for_each_source(config)
-    if args.overlay:
-        add_overlay_plot_for_sources(config)
+    if not args.config:
+        config = configure_from_sources(args.files, args.labels)
+        if args.single:
+            add_plot_for_each_source(config)
+        if args.overlay:
+            add_overlay_plot_for_sources(config)
+    else:
+        # in this case we don't add plots, let's keep things simple for now
+        config = read_config(args.config)
+        args.output = args.config
+
     config.enable_plots(*args.enable_plots)
     config.write(args.output)
     return 0
+
+def inspect(args):
+    """Quick inspection of config"""
+    config = read_config(args.config)
+    config.print_sources()
+    config.print_plots()
 
 def main():
     """
@@ -52,12 +63,17 @@ def main():
 
     config_parser = sub_parsers.add_parser("configure", parents=[common_debug_parser])
     config_parser.set_defaults(func=configure)
-    config_parser.add_argument("-f", "--files", nargs="+", help="An input file from which to build a configuration", required=True)
-    config_parser.add_argument("-l", "--labels", nargs="+", help="A label for the data", default="label")
+    config_parser.add_argument("--config", "-c", help="Pass already existing config if it should be altered in place")
+    config_parser.add_argument("-f", "--files", nargs="*", help="An input file from which to build a configuration")
+    config_parser.add_argument("-l", "--labels", nargs="*", help="A label for the data")
     config_parser.add_argument("-o", "--output", help="Where to write the derived JSON configuration", default="config.json")
     config_parser.add_argument("--overlay", help="If the sources have the same structure, make overlay plots", action="store_true")
     config_parser.add_argument("--single", help="Make single plots for each source found", action="store_true")
     config_parser.add_argument("--enable-plots", dest="enable_plots", nargs="+", help="Enable plots (pass \"all\" to enable all plots)", default=[])
+
+    inspect_parser = sub_parsers.add_parser("inspect", parents=[common_debug_parser])
+    inspect_parser.set_defaults(func=inspect)
+    inspect_parser.add_argument("-c", "--config", help="plot configuration")
 
     args = main_parser.parse_args()
 

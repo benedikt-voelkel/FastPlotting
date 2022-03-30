@@ -58,17 +58,62 @@ class ConfigInterface:
         return self._config["plots"]
 
     def enable_plots(self, *identifiers):
+        """En- or diables plots
+
+        Args:
+            identifiers: iterable
+                can be strings to JSON or plot's identifier (latter takes precedence, in particular "all" is specified)
+        """
         self.__initialise()
         enable_all = "all" in identifiers
-        for c in self._config["plots"]:
-            if enable_all or c["identifier"] in identifiers:
-                c["enable"] = True
 
-def configure_from_sources(sources, labels=None):
+        enable_identifiers = []
+        for i in identifiers:
+            from_json = parse_json(i)
+            if not from_json:
+                enable_identifiers.append(i)
+                continue
+            for ij in from_json.get("enable", []):
+                enable_identifiers.append(ij)
+
+        n_enabled = 0
+        for c in self._config["plots"]:
+            if enable_all or c["identifier"] in enable_identifiers:
+                c["enable"] = True
+                n_enabled += 1
+                CONFIG_LOGGER.debug("Enabling plot %s", c["identifier"])
+                continue
+            c["enable"] = False
+        if not n_enabled:
+            CONFIG_LOGGER.warning("No plots were enabled")
+
+    def print_sources(self):
+        text = "# SOURCES #"
+        text = "#" * len(text) + "\n" + text + "\n" + "#" * len(text) + "\n"
+        print(text)
+        for s in self.get_sources():
+            print(f"  {s['identifier']}")
+        print("\n")
+
+    def print_plots(self):
+        text = "# PLOTS #"
+        text = "#" * len(text) + "\n" + text + "\n" + "#" * len(text) + "\n"
+        print(text)
+        for s in self.get_plots():
+            print(f"  {s['identifier']}, enabled: {s['enable']}")
+        print("\n")
+
+def configure_from_sources(sources, labels=None, **kwargs):
+    if not sources:
+        CONFIG_LOGGER.error("There are no sources to configure from")
+        return ConfigInterface()
     if labels and len(sources) != len(labels):
         CONFIG_LOGGER.critical("Need same number of sources and labels, %d vs. %d", len(source), len(labels))
     extract_funcs = (extract_from_source,)
     config = ConfigInterface()
+    input_config_path = kwargs.pop("input_config_path", None)
+    if input_config_path:
+        config.read(input_config_path)
     for i, (s, l) in enumerate(zip(sources, labels)):
         batches = None
         for ef in extract_funcs:
@@ -84,4 +129,9 @@ def configure_from_sources(sources, labels=None):
             b["identifier"] = f"{b['identifier']}_{i}"
             config.add_data_source(**b)
 
+    return config
+
+def read_config(path):
+    config = ConfigInterface()
+    config.read(path)
     return config

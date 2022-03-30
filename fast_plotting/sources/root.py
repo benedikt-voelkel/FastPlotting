@@ -9,24 +9,66 @@ from fast_plotting.logger import get_logger
 
 ROOT_LOGGER = get_logger("ROOTSources")
 
-def convert_to_numpy(histogram):
-    """Convert to the numpy format we are using
 
-    Right now only handle TH1<type>
-    """
-    if isinstance(histogram, TH1) and isinstance(histogram, (TH2, TH3)):
-        ROOT_LOGGER.critical("At the moment can only handle TH1.")
+def convert_to_numpy_1d(histogram):
+    """Convert to the numpy for TH1"""
 
     n_bins = histogram.GetNbinsX()
     data = np.full((n_bins, 2), 0.)
     uncertainties = np.full((n_bins, 2, 2), 0.)
+    # Need one element more cause N+1 bin edges
+    bin_edges = np.full((n_bins + 1, 2), np.nan, dtype=float)
 
     axis = histogram.GetXaxis()
     for i in range(1, n_bins + 1):
         data[i-1][:] = [axis.GetBinCenter(i), histogram.GetBinContent(i)]
         uncertainties[i-1][1][:] = [histogram.GetBinError(i), histogram.GetBinError(i)]
+        bin_edges[i-1][0] = axis.GetBinLowEdge(i)
+        if i == n_bins:
+            bin_edges[i][0] = axis.GetBinUpEdge(i)
 
-    return data, uncertainties
+    return data, uncertainties, bin_edges
+
+
+
+def convert_to_numpy_1d(histogram):
+    """Convert to the numpy for TH1"""
+
+    n_bins_x = histogram.GetNbinsX()
+    n_bins_y = histogram.GetNbinsY()
+    n_bins = n_bins_x * n_bins_y
+
+    data = np.full((n_bins, 3), 0.)
+    uncertainties = np.full((n_bins, 3, 2), 0.)
+    # Need one element more cause N+1 bin edges
+    bin_edges = np.full((n_bins + 1, 3), np.nan, dtype=float)
+
+    axis_x = histogram.GetXaxis()
+    axis_y = histogram.GetXaxis()
+    for i in range(1, n_bins_x + 1):
+        for j in range(1, n_bins_y + 1):
+            bin = i * j
+            data[bin-1][:] = [axis_x.GetBinCenter(i), axis_y.GetBinCenter(j), histogram.GetBinContent(bin)]
+            uncertainties[bin-1][1][:] = [histogram.GetBinError(i), histogram.GetBinError(i)]
+            bin_edges[i-1][0] = axis.GetBinLowEdge(i)
+            if i == n_bins:
+                bin_edges[i][0] = axis.GetBinUpEdge(i)
+
+    return data, uncertainties, bin_edges
+
+
+def convert_to_numpy(histogram):
+    """Convert to the numpy format we are using
+
+    Right now only handle TH1 and TH2
+    """
+    if isinstance(histogram, (TH1, TH2)) and isinstance(histogram, TH3):
+        ROOT_LOGGER.critical("At the moment can only handle TH1.")
+
+    if isinstance(histogram, TH2):
+        return convert_to_numpy_2d(histogram)
+    return convert_to_numpy_1d(histogram)
+
 
 def get_histogram(root_object, root_path_list):
     """Extract histogram from ROOT object

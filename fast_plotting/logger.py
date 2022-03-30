@@ -72,10 +72,16 @@ class FastPlottingLoggerFormatter(logging.Formatter):
                                                    self.reset))
         return logging.Formatter.format(self, cached_record)
 
-
 def reconfigure_logging(debug, *names):
+    """reconfigure and switch on/off debug
+
+    Args:
+        debug: bool
+            whether or not to switch to debug
+        names: iterable (optional)
+            only apply this change to loggers with name. If not given, change applies to all loggers
+    """
     if not names:
-        # set as default
         ENABLE_DEBUG = debug
         loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
     else:

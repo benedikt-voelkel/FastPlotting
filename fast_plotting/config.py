@@ -64,17 +64,18 @@ class ConfigInterface:
             identifiers: iterable
                 can be strings to JSON or plot's identifier (latter takes precedence, in particular "all" is specified)
         """
+
         self.__initialise()
         enable_all = "all" in identifiers
-
         enable_identifiers = []
-        for i in identifiers:
-            from_json = parse_json(i)
-            if not from_json:
-                enable_identifiers.append(i)
-                continue
-            for ij in from_json.get("enable", []):
-                enable_identifiers.append(ij)
+        if not enable_all:
+            for i in identifiers:
+                from_json = parse_json(i)
+                if not from_json:
+                    enable_identifiers.append(i)
+                    continue
+                for ij in from_json.get("enable", []):
+                    enable_identifiers.append(ij)
 
         n_enabled = 0
         for c in self._config["plots"]:

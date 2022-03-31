@@ -4,7 +4,7 @@ import numpy as np
 
 from ROOT import TFile, TH1, TH2, TH3, TDirectory, TList
 
-from fast_plotting.data import DataAnnotations
+from fast_plotting.data.data import DataAnnotations
 from fast_plotting.logger import get_logger
 
 ROOT_LOGGER = get_logger("ROOTSources")
@@ -12,7 +12,6 @@ ROOT_LOGGER = get_logger("ROOTSources")
 
 def convert_to_numpy_1d(histogram):
     """Convert to the numpy for TH1"""
-
     n_bins = histogram.GetNbinsX()
     data = np.full((n_bins, 2), 0.)
     uncertainties = np.full((n_bins, 2, 2), 0.)
@@ -30,8 +29,7 @@ def convert_to_numpy_1d(histogram):
     return data, uncertainties, [bin_edges]
 
 def convert_to_numpy_2d(histogram):
-    """Convert to the numpy for TH1"""
-
+    """Convert to the numpy for TH2"""
     n_bins_x = histogram.GetNbinsX()
     n_bins_y = histogram.GetNbinsY()
     n_bins = n_bins_x * n_bins_y
@@ -44,16 +42,16 @@ def convert_to_numpy_2d(histogram):
     axis_x = histogram.GetXaxis()
     axis_y = histogram.GetYaxis()
     for i in range(1, n_bins_x + 1):
-        bin_edges[0][i-1] = axis.GetBinLowEdge(i)
+        bin_edges[0][i-1] = axis_x.GetBinLowEdge(i)
         if i == n_bins_x:
-            bin_edges[0][i] = axis.GetBinUpEdge(i)
+            bin_edges[0][i] = axis_x.GetBinUpEdge(i)
         for j in range(1, n_bins_y + 1):
             data[i-1,j-1,:] = [axis_x.GetBinCenter(i), axis_y.GetBinCenter(j), histogram.GetBinContent(i, j)]
             uncertainties[i-1,j-1,2,:] = [histogram.GetBinError(i, j), histogram.GetBinError(i, j)]
     for j in range(1, n_bins_y + 1):
-        bin_edges[1][j-1] = axis.GetBinLowEdge(j)
+        bin_edges[1][j-1] = axis_y.GetBinLowEdge(j)
         if j == n_bins_y:
-            bin_edges[1][j] = axis.GetBinUpEdge(j)
+            bin_edges[1][j] = axis_y.GetBinUpEdge(j)
 
     return data, uncertainties, bin_edges
 
@@ -68,7 +66,6 @@ def convert_to_numpy(histogram):
     if isinstance(histogram, TH2):
         return convert_to_numpy_2d(histogram)
     return convert_to_numpy_1d(histogram)
-
 
 def get_histogram(root_object, root_path_list):
     """Extract histogram from ROOT object
@@ -131,7 +128,7 @@ def read(filepath, histogram_path):
 def extract_impl(root_object, current_path, collect, skip_this_name=False):
     if not skip_this_name:
         current_path += f"/{root_object.GetName()}"
-    if isinstance(root_object, TH1) and not isinstance(root_object, (TH2, TH3)):
+    if isinstance(root_object, (TH1, TH2)) and not isinstance(root_object, TH3):
         # Collect only what we can handle at the moment
         collect.append(current_path[1:])
     if isinstance(root_object, TDirectory):

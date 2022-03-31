@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from fast_plotting.registry import get_from_registry
 from fast_plotting.logger import get_logger
 from fast_plotting.io import parse_json, make_dir
+from fast_plotting.data import datatypes
 
 PLOT_LOGGER = get_logger("Plot")
 
@@ -71,8 +72,13 @@ def plot_single(config_batch, ax=None):
         _, ax = plt.subplots(figsize=(30, 30))
     figure = ax.get_figure()
 
+    skip = False
     for plot_object in config_batch["objects"]:
         data_wrapper = get_from_registry(plot_object["identifier"])
+        if data_wrapper.get_dimension() != datatypes.DATA_DIMESNION_1D:
+            PLOT_LOGGER.warning("Skipping 2D plot %s", config_batch["identifier"])
+            skip = True
+            continue
         data = data_wrapper.data
         uncertainties = data_wrapper.uncertainties
         data_annotations = data_wrapper.data_annotations
@@ -85,6 +91,9 @@ def plot_single(config_batch, ax=None):
             yerr = uncertainties[:,1,:].T
         plot_type = plot_object.get("type", PLOT_TYPE_STEP)
         plot_single_1d(x, y, plot_object.get("label", "label"), ax, plot_type, xerr=xerr, yerr=yerr)
+
+    if skip:
+        return figure, ax
 
     ax.legend(loc="best", fontsize=30)
 

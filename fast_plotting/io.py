@@ -12,7 +12,7 @@ def parse_json(filepath):
     """wrap JSON reading"""
     filepath = expanduser(filepath)
     if not isfile(filepath):
-        IO_LOGGER.error("ERROR: JSON file %s does not exist.", filepath)
+        #IO_LOGGER.error("ERROR: JSON file %s does not exist.", filepath)
         return None
     with open(filepath, "r") as f:
         try:

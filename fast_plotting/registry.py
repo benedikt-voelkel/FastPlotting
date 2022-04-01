@@ -52,6 +52,8 @@ def get_data_from_source(batch):
         if "filepath" not in batch or "rootpath" not in batch:
             DATA_LOGGER.critical("Need filepath and path to object inside ROOT file")
         data, uncertainties, bin_edges, data_annotations = get_from_root(batch["filepath"], batch["rootpath"])
+        data_annotations.label = batch.get("label", "")
+
         data_wrapper = DataWrapper(identifier, data, uncertainties=uncertainties, bin_edges=bin_edges, data_annotations=data_annotations)
         add_to_registry(identifier, data_wrapper)
     else:

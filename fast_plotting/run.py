@@ -5,8 +5,7 @@ import argparse
 
 from fast_plotting.config import read_config, configure_from_sources
 from fast_plotting.registry import read_from_config
-from fast_plotting.plot import plot as plot_impl
-from fast_plotting.plot import add_plot_for_each_source, add_overlay_plot_for_sources
+from fast_plotting.plot.utils import plot_auto, add_plot_for_each_source, add_overlay_plot_for_sources
 
 from fast_plotting.logger import get_logger, reconfigure_logging
 
@@ -17,7 +16,7 @@ def plot(args):
     MAIN_LOGGER.info("Run")
     config = read_config(args.config)
     read_from_config(config)
-    plot_impl(config, args.output, args.all_in_one)
+    plot_auto(config, args.output, args.all_in_one)
     MAIN_LOGGER.info("Done")
     return 0
 
@@ -25,14 +24,15 @@ def configure(args):
     """create a configuration"""
     if not args.config:
         config = configure_from_sources(args.files, args.labels)
-        if args.single:
-            add_plot_for_each_source(config)
-        if args.overlay:
-            add_overlay_plot_for_sources(config)
     else:
         # in this case we don't add plots, let's keep things simple for now
         config = read_config(args.config)
         args.output = args.config
+
+    if args.single:
+        add_plot_for_each_source(config)
+    if args.overlay:
+        add_overlay_plot_for_sources(config)
 
     config.enable_plots(*args.enable_plots)
     config.write(args.output)

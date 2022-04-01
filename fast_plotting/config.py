@@ -57,6 +57,10 @@ class ConfigInterface:
             return []
         return self._config["plots"]
 
+    def reset_plots(self):
+        self.__initialise()
+        self._config["plots"] = []
+
     def enable_plots(self, *identifiers):
         """En- or diables plots
 
@@ -64,7 +68,6 @@ class ConfigInterface:
             identifiers: iterable
                 can be strings to JSON or plot's identifier (latter takes precedence, in particular "all" is specified)
         """
-
         self.__initialise()
         enable_all = "all" in identifiers
         enable_identifiers = []

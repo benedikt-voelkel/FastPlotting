@@ -19,7 +19,7 @@ def finalise_label(label):
     label = label.replace("#", "")
     return label
 
-def plot_single_1d(x, y, label, ax, plot_type=plottypes.PLOT_TYPE_STEP, xerr=None, yerr=None):
+def plot_single_1d(x, y, label, ax, plot_type=plottypes.PLOT_TYPE_STEP, xerr=None, yerr=None, bin_edges=None):
     """Put a single object on axes"""
     if plot_type not in plottypes.PLOT_TYPES:
         PLOT_LOGGER.error("Cannot handle plot type %s", plot_type)
@@ -41,7 +41,10 @@ def plot_single_1d(x, y, label, ax, plot_type=plottypes.PLOT_TYPE_STEP, xerr=Non
     elif plot_type == plottypes.PLOT_TYPE_LINE:
         ax.plot(x, y, alpha=0.4, label=label)
     elif plot_type == plottypes.PLOT_TYPE_STEP:
-        ax.step(x, y, where="mid", label=label, lw=2)
+        bins = len(x) if bin_edges is None else bin_edges
+        h = ax.hist(x, bins=len(x), weights=y, histtype="step", label=label, lw=2, fill=None)
+        if yerr is not None:
+            ax.errorbar(x, y, yerr=yerr, lw=2, fmt="None", elinewidth=3)
 
 def plot_single_2d(x, y, z, label, ax, plot_type=plottypes.PLOT_TYPE_SCATTER):
     """Put a single object on axes"""
@@ -131,24 +134,22 @@ class Plotter:
         if not plot_names:
             PLOT_LOGGER.warning("No plot names specified")
             return
-        if figure_name not in self.figure_name_to_index:
-            # make a new figure if needed
-            self.figure_name_to_index[figure_name] = len(self.plots_to_figure_mapping)
-            self.plots_to_figure_mapping.append([])
+        if figure_name in self.figure_name_to_index:
+            PLOT_LOGGER.warning("Figure %s was already defined, not overwriting", figure_name)
+            return
+        # make a new figure if needed
+        self.figure_name_to_index[figure_name] = len(self.plots_to_figure_mapping)
+        self.plots_to_figure_mapping.append([])
         plots_on_figure = self.plots_to_figure_mapping[-1]
         for pl in plot_names:
-            # browse through plot names
-            if pl not in self.plot_name_suffices:
-                if pl not in self.plot_name_to_index:
-                    PLOT_LOGGER.warning("Plot name %s not found, skip", pl)
-                    continue
-                plots_on_figure.append(self.plot_name_to_index[pl])
-                # continue here cause no suffices ==> all added
+            if pl not in self.plot_name_to_index:
+                PLOT_LOGGER.warning("Plot name %s not found, skip", pl)
                 continue
-            # add the plot that has sibling with suffices
             plots_on_figure.append(self.plot_name_to_index[pl])
-            for pls in self.plot_name_suffices[pl]:
-                plots_on_figure.append(self.plot_name_to_index[f"{pl}_{pls}"])
+            # browse through plot names
+            if pl in self.plot_name_suffices:
+                for pls in self.plot_name_suffices[pl]:
+                    plots_on_figure.append(self.plot_name_to_index[f"{pl}_{pls}"])
 
     def plot_1d(self, data_wrapper, ax):
         # TODO Really only 1d data at the moment

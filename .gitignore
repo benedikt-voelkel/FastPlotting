@@ -21,3 +21,9 @@ setup.cfg
 
 # macOS
 .DS_Store
+
+# ROOT files
+*.root
+
+# JSON
+*.json

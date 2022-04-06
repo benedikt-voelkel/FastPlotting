@@ -52,6 +52,12 @@ class ConfigInterface:
             return []
         return self._config["sources"]
 
+    def get_source(self, identifier):
+        for batch in self.get_sources():
+            if batch["identifier"] == identifier:
+                return batch
+        return None
+
     def get_plots(self):
         if self._config is None:
             return []

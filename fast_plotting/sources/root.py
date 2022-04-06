@@ -1,5 +1,5 @@
 """Handle ROOT as data source"""
-
+from os.path import exists
 import numpy as np
 
 from ROOT import TFile, TH1, TH2, TH3, TDirectory, TList
@@ -67,7 +67,7 @@ def convert_to_numpy(histogram):
         return convert_to_numpy_2d(histogram)
     return convert_to_numpy_1d(histogram)
 
-def get_histogram(root_object, root_path_list):
+def get_histogram(root_object, root_path_list, *, wait_for_source=False):
     """Extract histogram from ROOT object
 
     Args:
@@ -82,9 +82,11 @@ def get_histogram(root_object, root_path_list):
         if finished:
             h = root_object.Get(next_in_list)
             if not h:
-                ROOT_LOGGER.critical("Object not found")
+                if not wait_for_source:
+                    ROOT_LOGGER.critical("Object not found")
+                return None
             return h
-        return get_histogram(root_object.Get(next_in_list), root_path_list[1:])
+        return get_histogram(root_object.Get(next_in_list), root_path_list[1:], wait_for_source=wait_for_source)
     if isinstance(root_object, TList):
         this_list = None
         for l in root_object:
@@ -95,23 +97,31 @@ def get_histogram(root_object, root_path_list):
                 break
         if not this_list:
             ROOT_LOGGER.critical("Object not found")
-        return get_histogram(this_list, root_path_list[1:])
-    ROOT_LOGGER.critical("Cannot handle ROOT object")
+        return get_histogram(this_list, root_path_list[1:], wait_for_source=wait_for_source)
+    if not wait_for_source:
+        ROOT_LOGGER.critical("Cannot handle ROOT object")
     return None
 
-def read(filepath, histogram_path):
+def read(filepath, histogram_path, *, wait_for_source=False):
     """Get a histogram from ROOT source
 
     Right now only from ROOT file
     """
 
+    if not exists(filepath):
+        if not wait_for_source:
+            ROOT_LOGGER.critical("File %s doesn't seem to exist.", filepath)
+        return None, None, None, None
+
     f = TFile.Open(filepath, "READ")
 
     histogram_path_list = histogram_path.split("/")
-    histogram = get_histogram(f, histogram_path_list)
+    histogram = get_histogram(f, histogram_path_list, wait_for_source=wait_for_source)
 
     if not histogram:
-        ROOT_LOGGER.critical("Failed to load histogram %s from file %s.", histogram_path, filepath)
+        if not wait_for_source:
+            ROOT_LOGGER.critical("Failed to load histogram %s from file %s.", histogram_path, filepath)
+        return None, None, None, None
 
     # prepare axis labels for annotations
     axis_labels = [""] * 2

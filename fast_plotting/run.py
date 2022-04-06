@@ -2,6 +2,7 @@
 
 import sys
 import argparse
+from time import sleep
 
 from fast_plotting.config import read_config, configure_from_sources
 from fast_plotting.registry import read_from_config
@@ -38,6 +39,17 @@ def configure(args):
     config.write(args.output)
     return 0
 
+def monitor(args):
+    config = read_config(args.config)
+    try:
+        while True:
+            read_from_config(config, True, wait_for_source=True)
+            plot_auto(config, args.output, True, accept_sources_not_found=True)
+            sleep(5)
+    except KeyboardInterrupt:
+        MAIN_LOGGER.info("Stop monitoring, shut down")
+
+
 def inspect(args):
     """Quick inspection of config"""
     config = read_config(args.config)
@@ -70,6 +82,11 @@ def main():
     config_parser.add_argument("--overlay", help="If the sources have the same structure, make overlay plots", action="store_true")
     config_parser.add_argument("--single", help="Make single plots for each source found", action="store_true")
     config_parser.add_argument("--enable-plots", dest="enable_plots", nargs="+", help="Enable plots (pass \"all\" to enable all plots)", default=[])
+
+    monitor_parser = sub_parsers.add_parser("monitor", parents=[common_debug_parser])
+    monitor_parser.set_defaults(func=monitor)
+    monitor_parser.add_argument("--config", "-c", help="Pass already existing config if it should be altered in place")
+    monitor_parser.add_argument("-o", "--output", help="Top directory where to save plots", default="./")
 
     inspect_parser = sub_parsers.add_parser("inspect", parents=[common_debug_parser])
     inspect_parser.set_defaults(func=inspect)

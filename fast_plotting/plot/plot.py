@@ -75,7 +75,7 @@ def finalise_figure(figure, save_path):
     PLOT_LOGGER.debug("Plotted at %s", save_path)
 
 class Plotter:
-    def __init__(self, allow_2d_overlaying=False):
+    def __init__(self, allow_2d_overlaying=False, *, accept_sources_not_found=False):
         self.data_wrappers = []
         # this maps like [[1, 3, 5], [2, 3, 4], [9,3]] where each sub-list conatins the indices of the histogram/function to be plotted. The index of the sub-lists refer to a plot
         self.wrappers_to_plot_mapping = []
@@ -93,6 +93,8 @@ class Plotter:
         self.plot_name_suffices = {}
         # plot properties
         self.plot_properties = {}
+        # whether or not we accept source not found
+        self.accept_sources_not_found = accept_sources_not_found
 
     def define_plot(self, plot_name, **kwargs):
         if plot_name in self.plot_properties:
@@ -110,7 +112,11 @@ class Plotter:
                 identifies the plot to add to
         """
         allow_2d_overlaying = allow_2d_overlaying if allow_2d_overlaying is not None else self.allow_2d_overlaying
-        data_wrapper = get_from_registry(identifier)
+        data_wrapper = get_from_registry(identifier, accept_not_found=self.accept_sources_not_found)
+        if data_wrapper is None:
+            PLOT_LOGGER.warning("Cannot obtain data of identifier %s", identifier)
+            return
+
         dim = data_wrapper.get_dimension()
 
         if plot_name not in self.plot_name_to_index:
@@ -193,6 +199,9 @@ class Plotter:
             PLOT_LOGGER.warning("Figure with name %s unknown, not plotting", figure_name)
             return
         plot_index_list = self.plots_to_figure_mapping[self.figure_name_to_index[figure_name]]
+        if not plot_index_list:
+            PLOT_LOGGER.warning("Nothing to plot")
+            return
         n_required_cols_rows = ceil(sqrt(len(plot_index_list)))
 
         figure, axes = plt.subplots(n_required_cols_rows, n_required_cols_rows, figsize=(40, 40))

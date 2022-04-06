@@ -28,13 +28,13 @@ def add_overlay_plot_for_sources(config):
     for k, o in objects.items():
         config.add_plot(identifier=k, objects=o, title=k, enable=False, output=f"{k}.png")
 
-def plot_auto(config, out_dir="./", all_in_one=False):
+def plot_auto(config, out_dir="./", all_in_one=False, *, accept_sources_not_found=False):
     batches = [b for b in config.get_plots() if b["enable"]]
     if not batches:
         PLOT_LOGGER.warning("Nothing enabled, nothing to plot")
         return
     make_dir(out_dir)
-    plotter = Plotter()
+    plotter = Plotter(accept_sources_not_found=accept_sources_not_found)
     collect_fo_all_in_one = []
     for b in batches:
         plot_properties = {"title": b.get("title", b["identifier"])}

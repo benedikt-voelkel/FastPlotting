@@ -27,3 +27,6 @@ setup.cfg
 
 # JSON
 *.json
+
+# test artifacts
+**/pytest_artifacts

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Select sources{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post" enctype=multipart/form-data>
+    Source file: <input type=file name="source" id="source" required>
+    Label: <input name="label" id="label" required>
+    <input type="submit" name="btn" value="Add"">
+  </form>
+
+  <h2>Registered sources</h2>
+  {% if g.sources %}
+    <table>
+      <tr>
+        <th>File</th>
+        <th>Label</th>
+      </tr>
+    {% for s in g.sources['paths'] %}
+      <tr>
+          <td>{{ s[0] }}</td>
+          <td>{{ s[1] }}</td>
+      </tr>
+    {% endfor %}
+    </table>
+    <form method="post">
+      <input type="submit" name="btn" value="Load">
+      <input type="submit" name="btn" value="Remove">
+    </form>
+
+    {% if g.source_identifiers %}
+      <form method="post" id="select_plot">
+      <table>
+        <tr>
+          {% for s in g.source_identifiers['source_paths'] %}
+            <th>{{ s }}</th>
+          {% endfor %}
+        </tr>
+        <tr>
+          {% for s in g.source_identifiers['identifiers'] %}
+
+            <td>
+              <select name="top5[]" size="5" multiple form="select_plot">
+              {% for i in s %}
+                <option>{{ i }}</option>
+              {% endfor %}
+              </select>
+            </td>
+          {% endfor %}
+        </tr>
+      </table>
+      <input type="submit" name="btn" value="Plot">
+    {% endif %}
+
+    {% if plot %}
+      <div id='chart' class='chart'”></div>
+      <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+      <script type='text/javascript'>
+        var graphs = {{plot | safe}};
+        Plotly.plot('chart',graphs,{});
+      </script>
+    {% endif %}
+
+
+  {% else %}
+    <p>No sources</p>
+  {% endif %}
+
+{% endblock %}

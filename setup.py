@@ -55,7 +55,7 @@ setup(
   # your project is installed. For an analysis of "install_requires" vs pip's
   # requirements files see:
   # https://packaging.python.org/en/latest/requirements.html
-  install_requires=["numpy", "matplotlib"],
+  install_requires=["numpy", "pandas", "matplotlib", "flask", "plotly"],
 
   python_requires='>=3.6',
 

@@ -10,6 +10,7 @@ Classes:
 """
 
 import numpy as np
+import pandas as pd
 
 from fast_plotting.data import datatypes
 from fast_plotting.logger import get_logger
@@ -105,8 +106,41 @@ class DataWrapper:
             if self.bin_edges is None:
                 return None, None
             return self.data[:,1], self.bin_edges
-
         if self.get_dimension() == datatypes.DATA_DIMESNION_2D:
             if self.bin_edges is None:
                 return None, None
             return self.data.reshape(len(self.bin_edges[0]) - 1, len(self.bin_edges[1]) - 1, 3)[:,:,2], self.bin_edges
+        return None, None
+
+    def get_as_table(self):
+        x, y, z = self.get_as_scatter()
+        return pd.DataFrame({"tag": [self.name for _ in x], "x": x, "y": y, "z": z})
+
+
+def combine_data_wrappers_df(*data_wrappers):
+    if not data_wrappers:
+        return None
+    df = data_wrappers[0].get_as_table()
+    if len(data_wrappers) == 1:
+        return df
+    df = pd.concat([df] + [dw.get_as_table() for dw in data_wrappers[1:]])
+    return df
+
+
+
+# class DataWrapperComplex(DataWrapper):
+#     def __init__(self, name, data, **kwargs):
+#         """init"""
+#         # the name should be unique
+#         self.name = name
+#         # at this point - for now - we assume that self.data is a pandas DataFrame
+#         self.data = data
+#         if kwargs:
+#             DATA_LOGGER.warning("Keyword arguments will not be used")
+#         if not isinstance(data, pd.DataFrame):
+#             # assume it's numpy now
+#             super().__init__(name, data)
+#             self.data = super().get_as_table()
+#
+#     def get_dimension(self):
+#         return datatypes.DATA_DIMESNION_MULTI

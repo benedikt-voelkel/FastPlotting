@@ -66,21 +66,23 @@ def get_data_from_source(batch, overwrite=False, *, wait_for_source=False):
         data, uncertainties, bin_edges, data_annotations = get_from_root(batch["filepath"], batch["rootpath"], wait_for_source=wait_for_source)
         if data is None and wait_for_source:
             DATA_LOGGER.warning("Aparrently waiting for source %s to become available", identifier)
-            return
+            return None
 
         data_annotations.label = batch.get("label", "")
 
         data_wrapper = DataWrapper(identifier, data, uncertainties=uncertainties, bin_edges=bin_edges, data_annotations=data_annotations)
         add_to_registry(identifier, data_wrapper, overwrite)
+        return data_wrapper
     else:
         DATA_LOGGER.critical("Cannot digest from source %s", source_name)
+    return None
 
 def load_source_from_config(config, identifier, overwrite=False):
     batch = config.get_source(identifier)
     if not batch:
         DATA_LOGGER.error("Cannot find %s as a source in the configuration", identifer)
         return
-    get_data_from_source(batch, overwrite)
+    return get_data_from_source(batch, overwrite)
 
 def read_from_config(config, update=False, *, wait_for_source=False):
     """Read from a JSON config

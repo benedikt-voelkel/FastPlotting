@@ -20,7 +20,7 @@ import plotly
 
 from fast_plotting.logger import get_logger
 from fast_plotting.config import read_config, configure_from_sources
-from fast_plotting.registry import get_from_registry, get_data_from_source
+from fast_plotting.registry import load_source_from_config
 from fast_plotting.data.data import combine_data_wrappers_df
 
 BACKEND_LOGGER = get_logger("Backend")
@@ -72,16 +72,9 @@ def remove_sources():
     WRAPPER.sources = []
 
 
-def plot(selection):
+def plot(selected_sources):
     # returns the JSONs
-    #WRAPPER.plotter = Plotter()
-    data_wrappers = []
-    for s in selection:
-        source = WRAPPER.config.get_source(s)
-        if source is None:
-            continue
-        get_data_from_source(source, True)
-        data_wrappers.append(get_from_registry(s))
+    data_wrappers = [load_source_from_config(WRAPPER.config, s, True) for s in selected_sources]
 
     df = combine_data_wrappers_df(*data_wrappers)
 
@@ -89,13 +82,14 @@ def plot(selection):
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     return graphJSON
 
-
-
-
 @BLUEPRINT.route('/do', methods=('GET', 'POST'))
 def do():
     if WRAPPER.sources:
-        g.sources = {"paths": [(s[0], s[2]) for s in WRAPPER.sources]}
+        if not hasattr(g, "sources"):
+            g.sources = {"paths": [(s[0], s[2]) for s in WRAPPER.sources]}
+        else:
+            last_source = WRAPPER.sources[-1]
+            g.sources["paths"].append((last_source[0], last_source[2]))
     if WRAPPER.config:
         full_source_names = {s[1]: i for i, s in enumerate(WRAPPER.sources)}
         identifiers = [[] for _ in full_source_names]
@@ -111,7 +105,6 @@ def do():
             identifiers_tuples.append([i for i in ident])
         g.source_identifiers = {"source_paths": [s[0] for s in WRAPPER.sources], "identifiers": identifiers}
     if request.method == 'POST':
-
         if request.form["btn"] == "Add":
             add_source(request)
 

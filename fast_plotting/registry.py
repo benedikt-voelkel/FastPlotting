@@ -29,20 +29,71 @@ class DataRegistry:
 
         print(f"Add {identifier} to registry")
 
+<<<<<<< HEAD
         if identifier in self.registry and overwrite:
             self.registry[identifier].data = data_wrapper.data
             self.registry[identifier].uncertainties = data_wrapper.uncertainties
             self.registry[identifier].bin_edges = data_wrapper.bin_edges
             self.registry[identifier].data_annotations = data_wrapper.data_annotations
             return
+=======
+    DATA_REGISTRY[identifier] = data_wrapper
+
+def get_from_registry(identifier, *, accept_not_found=False):
+    """Get a DataWrapper object by name
+
+    Args:
+        identifier: str
+            unique name
+    """
+    if identifier not in DATA_REGISTRY:
+        if not accept_not_found:
+            DATA_LOGGER.critical("Data %s not registered", identifier)
+        return None
+    return DATA_REGISTRY[identifier]
+
+def get_data_from_source(batch, overwrite=False, *, wait_for_source=False):
+    """Get some data from a source
+
+    Args:
+        batch: dict
+            Dictionary containing all information to extract data
+    """
+    source_name = batch["source_name"].lower()
+    identifier = batch["identifier"]
+
+    if source_name == "root":
+        if "filepath" not in batch or "rootpath" not in batch:
+            DATA_LOGGER.critical("Need filepath and path to object inside ROOT file")
+        data, uncertainties, bin_edges, data_annotations = get_from_root(batch["filepath"], batch["rootpath"], wait_for_source=wait_for_source)
+        if data is None and wait_for_source:
+            DATA_LOGGER.warning("Aparrently waiting for source %s to become available", identifier)
+            return None
+>>>>>>> 7039dab (Have a short cut to load sources)
 
         if identifier not in self.registry and overwrite:
             DATA_LOGGER.warning("Update of %s requested but not in registry, loading instead for the first time", identifier)
 
+<<<<<<< HEAD
         self.registry[identifier] = data_wrapper
 
     def get(self, identifier, *, accept_not_found=False):
         """Get a DataWrapper object by name
+=======
+        data_wrapper = DataWrapper(identifier, data, uncertainties=uncertainties, bin_edges=bin_edges, data_annotations=data_annotations)
+        add_to_registry(identifier, data_wrapper, overwrite)
+        return data_wrapper
+    else:
+        DATA_LOGGER.critical("Cannot digest from source %s", source_name)
+    return None
+
+def load_source_from_config(config, identifier, overwrite=False):
+    batch = config.get_source(identifier)
+    if not batch:
+        DATA_LOGGER.error("Cannot find %s as a source in the configuration", identifer)
+        return
+    return get_data_from_source(batch, overwrite)
+>>>>>>> 7039dab (Have a short cut to load sources)
 
         Args:
             identifier: str

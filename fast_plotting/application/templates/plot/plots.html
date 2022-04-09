@@ -1,0 +1,7 @@
+<label id="value_lable">
+  <div id='chart' class='chart'”></div>
+  <script type='text/javascript'>
+    var graphs = {{plotsJSON | safe}};
+    Plotly.plot('chart',graphs,{});
+  </script>
+</label>

@@ -1,71 +1,125 @@
-{% extends 'base.html' %}
+<!doctype html>
 
-{% block header %}
-  <h1>{% block title %}Select sources{% endblock %}</h1>
-{% endblock %}
+<head>
+  <title>{% block title %}{% endblock %} - Plotting</title>
+  <meta charset="UTF-8">
+  <!-- <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts_1.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts_2.css') }}">
+
+  <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+
+  <style>
+    html,body,h1,h2,h3,h4,h5 {font-family: "Raleway", sans-serif}
+  </style>
+</head>
 
 {% block content %}
-  <form method="post" enctype=multipart/form-data>
-    Source file: <input type=file name="source" id="source" required>
-    Label: <input name="label" id="label" required>
-    <input type="submit" name="btn" value="Add"">
-  </form>
+<body class="w3-light-grey">
+<div class="w3-main" style="margin-left:300px;margin-top:43px;">
 
-  <h2>Registered sources</h2>
-  {% if g.sources %}
-    <table>
-      <tr>
-        <th>File</th>
-        <th>Label</th>
-      </tr>
-    {% for s in g.sources['paths'] %}
-      <tr>
-          <td>{{ s[0] }}</td>
-          <td>{{ s[1] }}</td>
-      </tr>
-    {% endfor %}
-    </table>
-    <form method="post">
-      <input type="submit" name="btn" value="Load">
-      <input type="submit" name="btn" value="Remove">
+  <div class="w3-container">
+    <div class="w3-quarter">
+        <h5><b>Select sources</b></h5>
+        <form method="post" enctype=multipart/form-data id="select_sources">
+          <table class="w3-table w3-bordered w3-border w3-white">
+            <tr>
+              <td>Source file:</td>
+              <td><input type=file name="source" id="source" required form="select_sources"></td>
+            </tr>
+            <tr>
+              <td>Label</td>
+              <td><input name="label" id="label" required form="select_sources"></td>
+            </tr>
+          </table>
+          <br />
+          <button type="submit" class="w3-button w3-dark-grey" name="btn" value="Add">Add <i class="fa fa-plus"></i></button>
+        </form>
+        <br/>
+    </div>
+  </div>
+
+  <div class="w3-container">
+    <div class="w3-quarter">
+      <h5><b>Registered sources</b></h5>
+
+{% if g.sources %}
+          <table class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white">
+            <tr>
+              <th>File</th><th>Label</th>
+            </tr>
+{% for s in g.sources['paths'] %}
+            <tr>
+                <td>{{ s[0] }}</td><td>{{ s[1] }}</td>
+            </tr>
+{% endfor %}
+          </table>
+          <br />
+          <form method="post">
+            <input type="submit" name="btn" value="Load" class="w3-button w3-dark-grey">
+            <input type="submit" name="btn" value="Remove" class="w3-button w3-red">
+          </form>
+    </div>
+  </div>
+
+{% if g.source_identifiers %}
+  <div class="w3-panel">
+    <div class="w3-row-padding" style="margin:0 -16px">
+    <form method="post" id="select_plot">
+{% for si in g.source_identifiers['source_paths'] %}
+    <div class="w3-container w3-center w3-padding w3-light-grey" style="width:{{ g.width }}%; float: left">
+    <b>{{ si[0] }}</b>
+    <br />
+      <select id="top5" name="top5" size="10" multiple form="select_plot">
+{% for i in si[1] %}
+        <option>{{ i }}</option>
+{% endfor %}
+      </select>
+    </div>
+{% endfor %}
+    <div>
+      <button type="submit"  class="w3-button w3-green">Plot</button>
+    </div>
     </form>
+    </div>
+  </div>
 
-    {% if g.source_identifiers %}
-      <form method="post" id="select_plot">
-      <table>
-        <tr>
-          {% for s in g.source_identifiers['source_paths'] %}
-            <th>{{ s }}</th>
-          {% endfor %}
-        </tr>
-        <tr>
-          {% for s in g.source_identifiers['identifiers'] %}
 
-            <td>
-              <select name="top5[]" size="5" multiple form="select_plot">
-              {% for i in s %}
-                <option>{{ i }}</option>
-              {% endfor %}
-              </select>
-            </td>
-          {% endfor %}
-        </tr>
-      </table>
-      <input type="submit" name="btn" value="Plot">
+  <div id="place_for_plots"></div>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script>
+    //$(document).on('submit','#select_plot',function(e) {
+    $("#select_plot").submit(function(e) {
+        var form = $(this);
+        // to not actually send the form via HTML POST
+        e.preventDefault();
+        $.ajax({
+          url: "/plot/plots",
+          type: "POST",
+          data: form.serialize(),
+          success: function(response) {
+            //alert('saved');
+            $("#place_for_plots").html(response);
+          },
+          error: function(xhr) {
+            alert('problem');
+          }
+        });
+    });
+  </script>
+
     {% endif %}
 
-    {% if plot %}
-      <div id='chart' class='chart'”></div>
-      <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
-      <script type='text/javascript'>
-        var graphs = {{plot | safe}};
-        Plotly.plot('chart',graphs,{});
-      </script>
-    {% endif %}
+
 
 
   {% else %}
     <p>No sources</p>
   {% endif %}
 
+</div>
+</body>
 {% endblock %}

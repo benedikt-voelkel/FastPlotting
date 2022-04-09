@@ -103,7 +103,8 @@ def do():
         identifiers_tuples = []
         for ident in zip(*identifiers):
             identifiers_tuples.append([i for i in ident])
-        g.source_identifiers = {"source_paths": [s[0] for s in WRAPPER.sources], "identifiers": identifiers}
+        g.source_identifiers = {"source_paths": [(s[0], i) for s, i in zip(WRAPPER.sources, identifiers)]}
+        g.width = 100 / len(identifiers)
     if request.method == 'POST':
         if request.form["btn"] == "Add":
             add_source(request)
@@ -120,15 +121,27 @@ def do():
             if hasattr(g, "source_identifiers"):
                 del g.source_identifiers
 
-        if request.form["btn"] == "Plot":
-            BACKEND_LOGGER.info("PLOT")
-            selected = request.form.getlist('top5[]')
-            this_plot = plot(selected)
-            return render_template('plot/do.html', plot=this_plot)
+        # if request.form["btn"] == "Plot":
+        #     return redirect(url_for("plot.plots"))
 
         return redirect(url_for("plot.do"))
 
     return render_template('plot/do.html')
+
+@BLUEPRINT.route('/plots', methods=('GET', 'POST'))
+def plots():
+    plots = []
+    if request.method == 'POST':
+        BACKEND_LOGGER.info("PLOT")
+        selected = request.form.getlist('top5')
+        print(selected)
+        plots.append(plot(selected))
+        print(plots)
+
+    #plots = plots[0] if plots else
+    return render_template('plot/plots.html', plotsJSON=plots[0] if plots else [])
+
+
 #
 # @BLUEPRINT.route('/login', methods=('GET', 'POST'))
 # def login():

@@ -1,5 +1,7 @@
 <!doctype html>
 
+<html>
+
 <head>
   <title>{% block title %}{% endblock %} - Plotting</title>
   <meta charset="UTF-8">
@@ -11,6 +13,11 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts_2.css') }}">
 
   <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <!-- <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
 
   <style>
     html,body,h1,h2,h3,h4,h5 {font-family: "Raleway", sans-serif}
@@ -20,6 +27,11 @@
 {% block content %}
 <body class="w3-light-grey">
 <div class="w3-main" style="margin-left:300px;margin-top:43px;">
+
+
+  <!-- <a href="{{ url_for('plot.modal') }}" class="w3-button w3-dark-grey">Define plot</a>
+  {% block modal %}{% endblock %}
+  {% block script %}{% endblock %} -->
 
   <div class="w3-container">
     <div class="w3-quarter">
@@ -40,86 +52,63 @@
         </form>
         <br/>
     </div>
-  </div>
 
-  <div class="w3-container">
-    <div class="w3-quarter">
+
+    <div class="w3-quarter" style="float: left">
       <h5><b>Registered sources</b></h5>
 
-{% if g.sources %}
-          <table class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white">
-            <tr>
-              <th>File</th><th>Label</th>
-            </tr>
-{% for s in g.sources['paths'] %}
-            <tr>
-                <td>{{ s[0] }}</td><td>{{ s[1] }}</td>
-            </tr>
+{% if sources %}
+      <table class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white">
+        <tr>
+          <th>File</th><th>Label</th>
+        </tr>
+{% for s in sources %}
+        <tr>
+            <td>{{ s[0] }}</td><td>{{ s[1] }}</td>
+        </tr>
 {% endfor %}
-          </table>
-          <br />
-          <form method="post">
-            <input type="submit" name="btn" value="Load" class="w3-button w3-dark-grey">
-            <input type="submit" name="btn" value="Remove" class="w3-button w3-red">
-          </form>
     </div>
-  </div>
 
-{% if g.source_identifiers %}
-  <div class="w3-panel">
-    <div class="w3-row-padding" style="margin:0 -16px">
-    <form method="post" id="select_plot">
-{% for si in g.source_identifiers['source_paths'] %}
-    <div class="w3-container w3-center w3-padding w3-light-grey" style="width:{{ g.width }}%; float: left">
-    <b>{{ si[0] }}</b>
+    </table>
     <br />
-      <select id="top5" name="top5" size="10" multiple form="select_plot">
-{% for i in si[1] %}
-        <option>{{ i }}</option>
-{% endfor %}
-      </select>
-    </div>
-{% endfor %}
-    <div>
-      <button type="submit"  class="w3-button w3-green">Plot</button>
-    </div>
+    <form method="post">
+      <input type="submit" name="btn" value="Load" class="w3-button w3-dark-grey">
+      <input type="submit" name="btn" value="Remove" class="w3-button w3-red">
     </form>
-    </div>
+    <br />
+    <a href="{{ url_for('plot.defineplots_front') }}" class="w3-button w3-green">Define plot</a>
+    {% block defineplots %}{% endblock %}
+    {% block defineplotsscript %}{% endblock %}
+
   </div>
 
 
-  <div id="place_for_plots"></div>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-  <script>
-    //$(document).on('submit','#select_plot',function(e) {
-    $("#select_plot").submit(function(e) {
-        var form = $(this);
-        // to not actually send the form via HTML POST
-        e.preventDefault();
-        $.ajax({
-          url: "/plot/plots",
-          type: "POST",
-          data: form.serialize(),
-          success: function(response) {
-            //alert('saved');
-            $("#place_for_plots").html(response);
-          },
-          error: function(xhr) {
-            alert('problem');
-          }
-        });
-    });
-  </script>
+{% endif %}
 
-    {% endif %}
-
-
-
-
-  {% else %}
-    <p>No sources</p>
-  {% endif %}
+<div id="defined_plots" class="w3-quarter">
+{% block plots %}
+{% if plots_list %}
+    <h5><b>Defined plots</b></h5>
+    <table class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white">
+      <tr>
+        <th>Plot name</th>
+        <th>Action</th>
+      </tr>
+{% for p in plots_list %}
+      <tr>
+        <td>{{ p }}</td>
+        <td>
+          <a href="#" class="w3-button w3-dark-grey">Configure</a>
+          <a href="{{ url_for('plot.remove_plot', name=p)}}" class="w3-button w3-red">Remove</a>
+        </td>
+      </tr>
+{% endfor %} <!-- for p in plots_list -->
+    </table>
+{% endif %} <!-- if plots_list -->
+{% endblock %} <!-- block plots -->
+</div>
 
 </div>
 </body>
 {% endblock %}
+</html>

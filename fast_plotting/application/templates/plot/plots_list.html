@@ -1,0 +1,20 @@
+
+{% block plots %}
+{% if plots_list %}
+
+      <h5><b>Defined plots</b></h5>
+      <table class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white">
+        <tr>
+          <th>Plot name</th>
+          <th>Action</th>
+        </tr>
+  {% for p in plots_list %}
+        <tr>
+          <td>{{ p }}</td>
+          <td><a href="#" class="w3-button w3-dark-grey">Configure</a><a href="#" class="w3-button w3-red">Remove</a></td>
+        </tr>
+
+  {% endfor %}
+      </table>
+{% endif %}
+{% endblock %}

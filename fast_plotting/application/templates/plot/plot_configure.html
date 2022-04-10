@@ -1,0 +1,24 @@
+{% extends "plot/do.html" %}
+
+{% block modal %}
+
+<div class="w3-modal" id="exampleModal">
+  <div class="w3-modal-content">
+    <div class="w3-container">
+      bla
+      <a href="{{ url_for('plot.do') }}" class="w3-button w3-dark-grey">Close</a>
+    </div>
+  </div>
+</div>
+<script>
+  $(document).ready(function() {
+    //$("#exampleModal").style.display='block'
+    console.log("DONE")
+    $("#exampleModal").modal("show")
+  })
+</script>
+{% endblock %}
+
+{% block script %}
+
+{% endblock %}

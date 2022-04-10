@@ -1,0 +1,59 @@
+{% extends "plot/do.html" %}
+
+{% block defineplots %}
+
+<script>
+  document.addEventListener('keyup',function(e){
+      if (e.key === "Escape") {
+          // hide modal code
+          window.location.replace("{{ url_for('plot.do') }}");
+      }
+  });
+</script>
+
+
+
+<div class="w3-modal" id="addPlotModal">
+  <div class="w3-modal-content">
+    <div class="w3-container">
+      <form id="define_plot">
+        Name: <input type="text" id="plot_name" name="plot_name">
+        <button type="submit" class="w3-button w3-green">Add</button>
+      </form>
+      <a href="{{ url_for('plot.do') }}" class="w3-button w3-dark-grey">Close</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  //$(document).on('submit','#select_plot',function(e) {
+  $("#define_plot").submit(function(e) {
+      var form = $(this);
+      // to not actually send the form via HTML POST
+      e.preventDefault();
+      $.ajax({
+        url: "/plot/defineplots/add",
+        type: "POST",
+        data: form.serialize(),
+        success: function(response) {
+          //alert('saved');
+          $("#defined_plots").html(response);
+        },
+        error: function(xhr) {
+          alert('problem');
+        }
+      });
+  });
+</script>
+
+
+{% endblock %}
+
+{% block defineplotsscript %}
+<script>
+  $(document).ready(function() {
+    // $("#exampleModal").style.display='block'
+    $("#addPlotModal").modal("show")
+  })
+</script>
+{% endblock %}

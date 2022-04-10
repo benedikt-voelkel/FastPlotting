@@ -32,6 +32,7 @@ class Wrapper:
         self.config = None
         self.sources = []
         self.plotter = None
+        self.names = None
 
 WRAPPER = Wrapper()
 
@@ -70,6 +71,7 @@ def load_from_source():
 def remove_sources():
     WRAPPER.config = None
     WRAPPER.sources = []
+    WRAPPER.names = None
 
 
 def plot(selected_sources):
@@ -82,29 +84,13 @@ def plot(selected_sources):
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     return graphJSON
 
+def get_sources_for_html():
+    return [(s[0], s[2]) for s in WRAPPER.sources] if WRAPPER.sources else None
+
 @BLUEPRINT.route('/do', methods=('GET', 'POST'))
 def do():
-    if WRAPPER.sources:
-        if not hasattr(g, "sources"):
-            g.sources = {"paths": [(s[0], s[2]) for s in WRAPPER.sources]}
-        else:
-            last_source = WRAPPER.sources[-1]
-            g.sources["paths"].append((last_source[0], last_source[2]))
-    if WRAPPER.config:
-        full_source_names = {s[1]: i for i, s in enumerate(WRAPPER.sources)}
-        identifiers = [[] for _ in full_source_names]
-        for batch in WRAPPER.config.get_sources():
-            ind = full_source_names[batch["filepath"]]
-            identifiers[ind].append(batch["identifier"])
-        # re-arrange so that we can make a nice column
-        max_length = max(len(ident) for ident in identifiers)
-        # for ident in identifiers:
-        #     ident.extend([""] * (max_length - len(ident)))
-        identifiers_tuples = []
-        for ident in zip(*identifiers):
-            identifiers_tuples.append([i for i in ident])
-        g.source_identifiers = {"source_paths": [(s[0], i) for s, i in zip(WRAPPER.sources, identifiers)]}
-        g.width = 100 / len(identifiers)
+
+
     if request.method == 'POST':
         if request.form["btn"] == "Add":
             add_source(request)
@@ -126,7 +112,7 @@ def do():
 
         return redirect(url_for("plot.do"))
 
-    return render_template('plot/do.html')
+    return render_template('plot/do.html', plots_list=WRAPPER.names, sources=get_sources_for_html())
 
 @BLUEPRINT.route('/plots', methods=('GET', 'POST'))
 def plots():
@@ -141,6 +127,58 @@ def plots():
     #plots = plots[0] if plots else
     return render_template('plot/plots.html', plotsJSON=plots[0] if plots else [])
 
+
+@BLUEPRINT.route("/modal")
+def modal():
+    return render_template("plot/plot_configure.html")
+
+
+@BLUEPRINT.route("/defineplots/front")
+def defineplots_front():
+    return render_template("plot/define_plots.html", plots_list=WRAPPER.names, sources=get_sources_for_html())
+
+
+@BLUEPRINT.route("/defineplots/add", methods=('GET', 'POST'))
+def define_plots():
+
+    if request.method == 'POST':
+        BACKEND_LOGGER.info("ADD PLOT")
+        name = request.form.get('plot_name')
+        if not WRAPPER.names:
+            WRAPPER.names = []
+        WRAPPER.names.append(name)
+        print(name)
+
+    # source_identifiers = None
+    #
+    # if WRAPPER.config:
+    #     full_source_names = {s[1]: i for i, s in enumerate(WRAPPER.sources)}
+    #     identifiers = [[] for _ in full_source_names]
+    #     for batch in WRAPPER.config.get_sources():
+    #         ind = full_source_names[batch["filepath"]]
+    #         identifiers[ind].append(batch["identifier"])
+    #     # re-arrange so that we can make a nice column
+    #     max_length = max(len(ident) for ident in identifiers)
+    #     # for ident in identifiers:
+    #     #     ident.extend([""] * (max_length - len(ident)))
+    #     identifiers_tuples = []
+    #     for ident in zip(*identifiers):
+    #         identifiers_tuples.append([i for i in ident])
+    #     source_identifiers = {"source_paths": [(s[0], i) for s, i in zip(WRAPPER.sources, identifiers)]}
+
+
+    return render_template("plot/plots_list.html", plots_list=WRAPPER.names, sources=get_sources_for_html())
+
+
+@BLUEPRINT.route("/defineplots/remove", methods=('GET', 'POST'))
+def remove_plot():
+
+    to_be_removed = request.args.get("name")
+    print(to_be_removed)
+    if to_be_removed and WRAPPER.names and to_be_removed in WRAPPER.names:
+        del WRAPPER.names[WRAPPER.names.index(to_be_removed)]
+        print("removed")
+    return redirect(url_for("plot.do"))
 
 #
 # @BLUEPRINT.route('/login', methods=('GET', 'POST'))

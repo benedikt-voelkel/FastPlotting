@@ -1,0 +1,53 @@
+{% extends "plot/do.html" %}
+
+{% block configureplots %}
+
+
+
+<script>
+  document.addEventListener('keyup',function(e){
+      if (e.key === "Escape") {
+          // hide modal code
+          window.location.replace("{{ url_for('plot.do') }}");
+      }
+  });
+</script>
+
+
+<div class="w3-modal" id="addPlotModalConf">
+  <div class="w3-modal-content">
+    <div class="w3-container">
+      <h5><b>Define a plot</b></h5>
+      <form method="post" id="configure_plot" action="{{ url_for('plot.defineplots_configure_add') }}">
+      {% for si in source_identifiers %}
+        <div class="w3-container w3-center w3-padding w3-light-grey" style="width:{{ g.width }}%; float: left">
+          <b>{{ si[0] }}</b>
+          <br />
+          <select id="top5" name="top5" size="10" multiple form="configure_plot">
+     {% for i in si[1] %}
+            <option>{{ i }}</option>
+     {% endfor %}
+          </select>
+     {% endfor %}
+        </div>
+        <div>
+          <button type="submit"  class="w3-button w3-green">Plot</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+
+
+{% endblock %}
+
+{% block configureplotsscript %}
+<script>
+  $(document).ready(function() {
+    // $("#exampleModal").style.display='block'
+    $("#addPlotModalConf").modal("show")
+  })
+</script>
+{% endblock %}

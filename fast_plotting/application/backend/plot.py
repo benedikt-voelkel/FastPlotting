@@ -102,13 +102,6 @@ def do():
         if request.form["btn"] == "Remove":
             BACKEND_LOGGER.info("Remove sources")
             remove_sources()
-            if hasattr(g, "sources"):
-                del g.sources
-            if hasattr(g, "source_identifiers"):
-                del g.source_identifiers
-
-        # if request.form["btn"] == "Plot":
-        #     return redirect(url_for("plot.plots"))
 
         return redirect(url_for("plot.do"))
 
@@ -149,22 +142,6 @@ def define_plots():
         WRAPPER.names.append(name)
         print(name)
 
-    # source_identifiers = None
-    #
-    # if WRAPPER.config:
-    #     full_source_names = {s[1]: i for i, s in enumerate(WRAPPER.sources)}
-    #     identifiers = [[] for _ in full_source_names]
-    #     for batch in WRAPPER.config.get_sources():
-    #         ind = full_source_names[batch["filepath"]]
-    #         identifiers[ind].append(batch["identifier"])
-    #     # re-arrange so that we can make a nice column
-    #     max_length = max(len(ident) for ident in identifiers)
-    #     # for ident in identifiers:
-    #     #     ident.extend([""] * (max_length - len(ident)))
-    #     identifiers_tuples = []
-    #     for ident in zip(*identifiers):
-    #         identifiers_tuples.append([i for i in ident])
-    #     source_identifiers = {"source_paths": [(s[0], i) for s, i in zip(WRAPPER.sources, identifiers)]}
 
 
     return render_template("plot/plots_list.html", plots_list=WRAPPER.names, sources=get_sources_for_html())
@@ -179,6 +156,33 @@ def remove_plot():
         del WRAPPER.names[WRAPPER.names.index(to_be_removed)]
         print("removed")
     return redirect(url_for("plot.do"))
+
+
+@BLUEPRINT.route("/defineplots/configure")
+def defineplots_configure():
+    source_identifiers = None
+
+    print("I am here", WRAPPER.config)
+
+    if WRAPPER.config:
+        full_source_names = {s[1]: i for i, s in enumerate(WRAPPER.sources)}
+        identifiers = [[] for _ in full_source_names]
+        for batch in WRAPPER.config.get_sources():
+            ind = full_source_names[batch["filepath"]]
+            identifiers[ind].append(batch["identifier"])
+
+        source_identifiers = [(s[0], i) for s, i in zip(WRAPPER.sources, identifiers)]
+    return render_template("plot/configure_plots.html", plots_list=WRAPPER.names, sources=get_sources_for_html(), source_identifiers=source_identifiers)
+
+
+@BLUEPRINT.route("/defineplots/configure/add", methods=('GET', 'POST'))
+def defineplots_configure_add():
+    if request.method == 'POST':
+        BACKEND_LOGGER.info("CONFIGURED PLOT")
+        to_be_configured = request.form.getlist("top5")
+        print(to_be_configured)
+    return redirect(url_for("plot.do"))
+
 
 #
 # @BLUEPRINT.route('/login', methods=('GET', 'POST'))

@@ -98,8 +98,9 @@
       <tr>
         <td>{{ p }}</td>
         <td>
-          <a href="#" class="w3-button w3-dark-grey">Configure</a>
+          <a href="{{ url_for('plot.defineplots_configure', name=p)}}" class="w3-button w3-dark-grey">Configure</a>
           <a href="{{ url_for('plot.remove_plot', name=p)}}" class="w3-button w3-red">Remove</a>
+          <a href="#" class="w3-button w3-green">Plot</a>
         </td>
       </tr>
 {% endfor %} <!-- for p in plots_list -->
@@ -109,6 +110,9 @@
 </div>
 
 </div>
+
+{% block configureplots %}{% endblock %}
+{% block configureplotsscript %}{% endblock %}
 </body>
 {% endblock %}
 </html>

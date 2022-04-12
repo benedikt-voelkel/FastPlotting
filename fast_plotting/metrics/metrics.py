@@ -51,6 +51,16 @@ def integral(data_wrapper):
     #     return None, None
     # return None
 
+def compare_relative(func, data_wrapper_1, data_wrapper_2):
+    den = func(data_wrapper_2)
+    num = func(data_wrapper_1)
+    if not den:
+        METRICS_LOGGER.warning("Division by 0")
+        return None
+    if not num:
+        METRICS_LOGGER.warning("Numerator is 0")
+        return None
+    return num / den, num, den
 
 def shape(data_wrapper_1, data_wrapper_2):
     if data_wrapper_1.get_shape() != data_wrapper_2.get_shape():
@@ -70,3 +80,14 @@ def shape(data_wrapper_1, data_wrapper_2):
     except ZeroDivisionError:
         METRICS_LOGGER.warning("Empty histograms, division by 0")
         return None
+
+def compute_metrics(data_wrappers, metrics_names, compare=False):
+    if len(data_wrapper) < 2 and compare:
+        METRICS_LOGGER.warning("Only one batch of data was passed, nothing to compare")
+        return None
+    for mn in metric_names:
+        METRICS_LOGGER.info("Compare %s", mn)
+    return None
+
+def print_metrics(metrics):
+    METRICS_LOGGER.info("Printing metrics")

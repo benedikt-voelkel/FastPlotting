@@ -14,11 +14,13 @@ def integral(data_wrapper):
     if dim == datatypes.DATA_DIMESNION_1D:
         be = bin_edges[0]
         weights = be[1:] - be[:-1]
-        return np.dot(values, weights)
+        # take 0'th entry cause the return value is a 1D numpy according to input shape and return of np.dot
+        return np.dot(values, weights)[0]
     be_x = bin_edges[0][1:] - bin_edges[0][:-1]
     be_y = bin_edges[1][1:] - bin_edges[1][:-1]
     weights = np.outer(be_x, be_y).flatten()
-    return np.dot(values.flatten(), weights)
+    # take 0'th entry cause the return value is a 1D numpy according to input shape and return of np.dot
+    return np.dot(values.flatten(), weights)[0]
 
 def _norm(data_wrapper):
     if not data_wrapper:
@@ -27,7 +29,7 @@ def _norm(data_wrapper):
     if repr != datatypes.DATA_REPRESENTATION_HISTOGRAM:
         return None
     values, _ = data_wrapper.get_as_histogram()
-    return = values / integral(data_wrapper)
+    return values / integral(data_wrapper)
 
 def norm(data_wrapper):
     return _norm(data_wrapper)
@@ -63,27 +65,15 @@ def norm(data_wrapper):
     #     return None, None
     # return None
 
-def compare_relative(func, data_wrapper_1, data_wrapper_2):
-    """Given function, compare 2 sets of data"""
-    den = func(data_wrapper_2)
-    num = func(data_wrapper_1)
-    if not den:
-        METRICS_LOGGER.warning("Division by 0")
-        return None
-    if not num:
-        METRICS_LOGGER.warning("Numerator is 0")
-        return None
-    return num / den, num, den
-
 def _shape_numpy(norm_1, norm_2):
     try:
         return np.sum((norm_1 - norm_2)**2 / (norm_1 + norm_2)) / 2
     except ZeroDivisionError:
         METRICS_LOGGER.warning("Empty histograms, division by 0")
         return None
-        
+
 def _shape(data_wrapper_1, data_wrapper_2):
-    norm_1, norm_2 = (_norm(data_wrapper_1), norm(_data_wrapper_2))
+    norm_1, norm_2 = (_norm(data_wrapper_1), norm(data_wrapper_2))
     return _shape_numpy(norm_1, norm_2)
 
 def shape(data_wrapper_1, data_wrapper_2):
@@ -95,21 +85,113 @@ def shape(data_wrapper_1, data_wrapper_2):
         return None
     return _shape(data_wrapper_1, data_wrapper_2)
 
+def _compare_single_metric(func, data_wrapper_1, data_wrapper_2):
+    res1, res2 = (func(data_wrapper_1), func(data_wrapper_2))
+    if res1 is None or res2 is None:
+        return None
+    return res2 / res1
 
+def _compare_metric(func, data_wrapper_1, data_wrapper_2):
+    """forward to correct function
 
+    deciide how func should be called. Either direct comparison
+    of same maetric on both data or metric which depends on both at the same time
 
-def compute_metrics(data_wrapper_1, data_wrapper_2, [])
+    """
+    n_pos_args = func.__code__.co_argcount
+    if n_pos_args == 1:
+        return _compare_single_metric(func, data_wrapper_1, data_wrapper_2)
+    return func(data_wrapper_1, data_wrapper_2)
+
+def _single_metric(func, data_wrapper):
+    """forward to correct function
+
+    deciide how func should be called. Either direct comparison
+    of same maetric on both data or metric which depends on both at the same time
+
+    """
+    n_pos_args = func.__code__.co_argcount
+    if n_pos_args != 1:
+        return None
+    return func(data_wrapper)
+
+METRICS = {"shape": shape,
+           "integral": integral}
+
 
 def compute_metrics(data_wrappers, metrics_names, compare=False):
-    if len(data_wrapper) < 2 and compare:
+    if len(data_wrappers) < 2 and compare:
         METRICS_LOGGER.warning("Only one batch of data was passed, nothing to compare")
         return None
-    # first data in list is taken as reference
-    ref_data = data_wrappers[0]
-    # now do for all 
-    for mn in metric_names:
-        METRICS_LOGGER.info("Compare %s", mn)
-    return None
 
-def print_metrics(metrics):
+    collect_all = {}
+    if not compare:
+        for dw in data_wrappers:
+            collect = {}
+            for mn in metrics_names:
+                if mn not in METRICS:
+                    METRICS_LOGGER.warning("Metric name %s unknown, skip...", mn)
+                    continue
+                collect[mn] = _single_metric(METRICS[mn], dw)
+                #print(collect[mn])
+            collect_all[dw.name] = collect
+        return collect_all
+
+    ref = data_wrappers[0]
+    for dw in data_wrappers[1:]:
+        collect = {}
+        for mn in metrics_names:
+            if mn not in METRICS:
+                METRICS_LOGGER.warning("Metric name %s unknown, skip...", mn)
+                continue
+            collect[mn] = _compare_metric(METRICS[mn], ref, dw)
+        collect_all[f"{ref.name}__VS__{dw.name}"] = collect
+    return collect_all
+
+def print_metrics(metrics, *, format="terminal"):
+
+    metric_name_to_col = {}
+    metric_col_to_name = []
+    for name, values in metrics.items():
+        for m_name, m_value in values.items():
+            if m_name in metric_name_to_col:
+                continue
+            metric_name_to_col[m_name] = len(metric_name_to_col)
+            metric_col_to_name.append(m_name)
+
+    #print(metric_col_to_name)
+    col_widths = [0] * (len(metric_col_to_name) + 1)
+    if format == "terminal":
+        # first column is the data name, following columnsa are the metrics values
+        top_line = [""] + metric_col_to_name
+        for i, tl in enumerate(top_line):
+            col_widths[i] = max(col_widths[i], len(tl))
+        lines = [top_line]
+        for name, values in metrics.items():
+            line = [name] + [""] * len(metric_col_to_name)
+            for m_name, m_value in values.items():
+                line[metric_name_to_col[m_name] + 1] = m_value
+            for  i, tl in enumerate(line):
+                col_widths[i] = max(col_widths[i], len(str(line[i])))
+            lines.append(line)
+
+        # now we have it and can construct the output
+        for line in lines:
+            for i, _ in enumerate(line):
+                line[i] = f"{line[i] : <{col_widths[i]}}"
+
+        lines = [" | ".join(line) for line in lines]
+        # add 4 for leading "| " and trailing " |"
+        length = len(lines[0]) + 4
+
+        line_sep = "-" * length + "\n"
+
+        to_print = "\n"
+        for l in lines:
+            to_print += line_sep
+            to_print += "| " + l + " |\n"
+        to_print += line_sep
+        print(to_print)
+        return None
+
     METRICS_LOGGER.info("Printing metrics")

@@ -60,7 +60,7 @@ def inspect(args):
 def metrics(args):
     config = read_config(args.config)
     for s in args.sources:
-        load_source_from_config(s)
+        load_source_from_config(config, s)
     print_metrics(compute_metrics([get_from_registry(s) for s in args.sources], args.metrics, args.compare))
 
 
@@ -90,10 +90,11 @@ def main():
     plot_parser.add_argument("-o", "--output", help="Top directory where to save plots", default="./")
     plot_parser.add_argument("--all-in-one", dest="all_in_one", action="store_true", help="plot everything into one final figure")
 
-    config_parser = sub_parsers.add_parser("configure", parents=[common_debug_parser, common_config_parser])
+    config_parser = sub_parsers.add_parser("configure", parents=[common_debug_parser])
     config_parser.set_defaults(func=configure)
     config_parser.add_argument("-f", "--files", nargs="*", help="An input file from which to build a configuration")
     config_parser.add_argument("-l", "--labels", nargs="*", help="A label for the data")
+    config_parser.add_argument("-c", "--config", help="potential input config to configure further")
     config_parser.add_argument("-o", "--output", help="Where to write the derived JSON configuration", default="config.json")
     config_parser.add_argument("--overlay", help="If the sources have the same structure, make overlay plots", action="store_true")
     config_parser.add_argument("--single", help="Make single plots for each source found", action="store_true")

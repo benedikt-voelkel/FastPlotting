@@ -74,6 +74,9 @@ class DataWrapper:
         # annotations
         self.data_annotations = kwargs.pop("data_annotations", DataAnnotations(axis_labels=["label"] * data.shape[1]))
 
+    def get_shape(self):
+        return self.data.shape
+
     def get_dimension(self):
         shape = self.data.shape[-1]
         if shape not in (2, 3):

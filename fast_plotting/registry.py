@@ -78,7 +78,7 @@ def get_data_from_source(batch, overwrite=False, *, wait_for_source=False):
 def load_source_from_config(config, identifier, overwrite=False):
     batch = config.get_source(identifier)
     if not batch:
-        DATA_LOGGER.error("Cannot find %s as a source in the configuration", identifer)
+        DATA_LOGGER.error("Cannot find %s as a source in the configuration", identifier)
         return
     get_data_from_source(batch, overwrite)
 

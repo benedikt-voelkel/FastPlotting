@@ -50,7 +50,6 @@ def monitor(args):
     except KeyboardInterrupt:
         MAIN_LOGGER.info("Stop monitoring, shut down")
 
-
 def inspect(args):
     """Quick inspection of config"""
     config = read_config(args.config)
@@ -61,8 +60,7 @@ def metrics(args):
     config = read_config(args.config)
     for s in args.sources:
         load_source_from_config(config, s)
-    print_metrics(compute_metrics([get_from_registry(s) for s in args.sources], args.metrics, args.compare))
-
+    print_metrics(compute_metrics([get_from_registry(s) for s in args.sources], args.metrics, args.compare), format=args.format)
 
 def main():
     """
@@ -83,6 +81,7 @@ def main():
     metrics_parser.add_argument("--compare", action="store_true", help="compare all to first")
     metrics_parser.add_argument("-s", "--sources", nargs="+", help="source identifiers to be compared")
     metrics_parser.add_argument("-m", "--metrics", nargs="+", help="metrics to be applied")
+    metrics_parser.add_argument("--format", help="in which format to output the metrics", default="terminal", choices=["terminal", "json", "heatmap"])
 
     plot_parser = sub_parsers.add_parser("plot", parents=[common_debug_parser])
     plot_parser.set_defaults(func=plot)

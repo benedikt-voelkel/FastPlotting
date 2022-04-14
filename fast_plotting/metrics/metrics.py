@@ -1,8 +1,11 @@
 """Provide some metrics to applied to data"""
 import numpy as np
+import pandas as pd
+from itertools import combinations
 
 from fast_plotting.data import datatypes
 from fast_plotting.logger import get_logger
+from fast_plotting.io import dump_json
 
 METRICS_LOGGER = get_logger("Metrics")
 
@@ -65,25 +68,25 @@ def norm(data_wrapper):
     #     return None, None
     # return None
 
-def _shape_numpy(norm_1, norm_2):
+def _chi2_numpy(norm_1, norm_2):
     try:
         return np.sum((norm_1 - norm_2)**2 / (norm_1 + norm_2)) / 2
     except ZeroDivisionError:
         METRICS_LOGGER.warning("Empty histograms, division by 0")
         return None
 
-def _shape(data_wrapper_1, data_wrapper_2):
+def _chi2(data_wrapper_1, data_wrapper_2):
     norm_1, norm_2 = (_norm(data_wrapper_1), norm(data_wrapper_2))
-    return _shape_numpy(norm_1, norm_2)
+    return _chi2_numpy(norm_1, norm_2)
 
-def shape(data_wrapper_1, data_wrapper_2):
-    if data_wrapper_1.get_shape() != data_wrapper_2.get_shape():
-        METRICS_LOGGER.warning("Different shapes")
+def chi2(data_wrapper_1, data_wrapper_2):
+    if data_wrapper_1.get_chi2() != data_wrapper_2.get_shape():
+        METRICS_LOGGER.warning("Different shapes of data")
         return None
     repr, dim = data_wrapper_1.preferred_representation()
     if repr != datatypes.DATA_REPRESENTATION_HISTOGRAM:
         return None
-    return _shape(data_wrapper_1, data_wrapper_2)
+    return _chi2(data_wrapper_1, data_wrapper_2)
 
 def _compare_single_metric(func, data_wrapper_1, data_wrapper_2):
     res1, res2 = (func(data_wrapper_1), func(data_wrapper_2))
@@ -115,16 +118,15 @@ def _single_metric(func, data_wrapper):
         return None
     return func(data_wrapper)
 
-METRICS = {"shape": shape,
+METRICS = {"chi2": chi2,
            "integral": integral}
 
-
-def compute_metrics(data_wrappers, metrics_names, compare=False):
+def compute_metrics(data_wrappers, metrics_names, compare=False, *, add_to_metrics=None):
     if len(data_wrappers) < 2 and compare:
         METRICS_LOGGER.warning("Only one batch of data was passed, nothing to compare")
         return None
 
-    collect_all = {}
+    collect_all = {} if not add_to_metrics else add_to_metrics
     if not compare:
         for dw in data_wrappers:
             collect = {}
@@ -137,18 +139,24 @@ def compute_metrics(data_wrappers, metrics_names, compare=False):
             collect_all[dw.name] = collect
         return collect_all
 
-    ref = data_wrappers[0]
-    for dw in data_wrappers[1:]:
+    for dw in combinations(data_wrappers, 2):
         collect = {}
         for mn in metrics_names:
             if mn not in METRICS:
                 METRICS_LOGGER.warning("Metric name %s unknown, skip...", mn)
                 continue
-            collect[mn] = _compare_metric(METRICS[mn], ref, dw)
+            collect[mn] = _compare_metric(METRICS[mn], dw[0], dw[1])
         collect_all[f"{ref.name}__VS__{dw.name}"] = collect
     return collect_all
 
 def print_metrics(metrics, *, format="terminal"):
+
+    if not metrics:
+        METRICS_LOGGER.warning("Metrics are empty")
+        return
+
+    if format == "json":
+        dump_json(metrics, "metrics.json")
 
     metric_name_to_col = {}
     metric_col_to_name = []
@@ -159,9 +167,21 @@ def print_metrics(metrics, *, format="terminal"):
             metric_name_to_col[m_name] = len(metric_name_to_col)
             metric_col_to_name.append(m_name)
 
-    #print(metric_col_to_name)
-    col_widths = [0] * (len(metric_col_to_name) + 1)
+    if format == "heatmap":
+        # col_names = ["data", "metric", "value"]
+        # lists = [[] * len(metrics) * len(metric_col_to_name) for _ in range(3)]
+        # for name, values in metrics.items():
+        #     for m_name, m_value in values.items():
+        #         lists[0].append(name)
+        #         lists[1].append(m_name)
+        #         lists[2].append(m_value)
+        # df = pd.DataFrame({cn[i]: lists[i] for i in range(3)})
+        METRICS_LOGGER.warning("Heatmap not yet implemented")
+
     if format == "terminal":
+        METRICS_LOGGER.info("Printing metrics")
+        #print(metric_col_to_name)
+        col_widths = [0] * (len(metric_col_to_name) + 1)
         # first column is the data name, following columnsa are the metrics values
         top_line = [""] + metric_col_to_name
         for i, tl in enumerate(top_line):
@@ -192,6 +212,3 @@ def print_metrics(metrics, *, format="terminal"):
             to_print += "| " + l + " |\n"
         to_print += line_sep
         print(to_print)
-        return None
-
-    METRICS_LOGGER.info("Printing metrics")

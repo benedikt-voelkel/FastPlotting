@@ -60,7 +60,7 @@ def metrics(args):
     config = read_config(args.config)
     for s in args.sources:
         load_source_from_config(config, s)
-    print_metrics(compute_metrics([get_from_registry(s) for s in args.sources], args.metrics, args.compare), format=args.format)
+    print_metrics(compute_metrics([get_from_registry(s) for s in args.sources], args.metrics, args.compare, args.thresh), format=args.format)
 
 def main():
     """
@@ -81,6 +81,7 @@ def main():
     metrics_parser.add_argument("--compare", action="store_true", help="compare all to first")
     metrics_parser.add_argument("-s", "--sources", nargs="+", help="source identifiers to be compared")
     metrics_parser.add_argument("-m", "--metrics", nargs="+", help="metrics to be applied")
+    metrics_parser.add_argument("--thresh", nargs="+", help="if --compare, thresholds are used to indicate whether or not data is compatible (has to have same number of args --metrics, for no comparison pass None)")
     metrics_parser.add_argument("--format", help="in which format to output the metrics", default="terminal", choices=["terminal", "json", "heatmap"])
 
     plot_parser = sub_parsers.add_parser("plot", parents=[common_debug_parser])

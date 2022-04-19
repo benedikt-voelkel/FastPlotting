@@ -80,7 +80,7 @@ def _chi2(data_wrapper_1, data_wrapper_2):
     return _chi2_numpy(norm_1, norm_2)
 
 def chi2(data_wrapper_1, data_wrapper_2):
-    if data_wrapper_1.get_chi2() != data_wrapper_2.get_shape():
+    if data_wrapper_1.get_shape() != data_wrapper_2.get_shape():
         METRICS_LOGGER.warning("Different shapes of data")
         return None
     repr, dim = data_wrapper_1.preferred_representation()
@@ -146,7 +146,7 @@ def compute_metrics(data_wrappers, metrics_names, compare=False, *, add_to_metri
                 METRICS_LOGGER.warning("Metric name %s unknown, skip...", mn)
                 continue
             collect[mn] = _compare_metric(METRICS[mn], dw[0], dw[1])
-        collect_all[f"{ref.name}__VS__{dw.name}"] = collect
+        collect_all[f"{dw[0].name}__VS__{dw[1].name}"] = collect
     return collect_all
 
 def print_metrics(metrics, *, format="terminal"):

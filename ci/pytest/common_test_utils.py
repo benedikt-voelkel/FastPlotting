@@ -19,7 +19,8 @@ def change_test_dir(request, monkeypatch):
 def make_root(suffix=None):
     test_file_name = ROOT_TEST_FILE_NAME
     if suffix:
-        test_file_name += f"_{suffix}"
+        test_file_name = test_file_name[:-5]
+        test_file_name += f"_{suffix}.root"
     file = TFile(test_file_name, "RECREATE")
 
     # make a dir1
@@ -51,7 +52,7 @@ def make_root(suffix=None):
             h = TH1F(f"hist_3_{i}_{j}", "", 100, -5, 5)
             h.FillRandom("gaus", 10000)
             h.Write()
-    
+
     # make directory insides another directory
     dir_last = file.mkdir("dir_last")
     dir_last.cd()

@@ -133,11 +133,13 @@ METRICS = {"chi2": chi2,
            "integral": integral}
 
 def compute_metrics(data_wrappers, metrics_names, compare=False, *, add_to_metrics=None):
-    if len(data_wrappers) < 2 and compare:
-        METRICS_LOGGER.warning("Only one batch of data was passed, nothing to compare")
-        return None
 
     collect_all = {} if add_to_metrics is None else add_to_metrics
+
+    if len(data_wrappers) < 2 and compare:
+        METRICS_LOGGER.warning("Only one batch of data was passed, nothing to compare")
+        return collect_all
+
     if not compare:
         for dw in data_wrappers:
             collect = {}
@@ -189,20 +191,28 @@ def print_metrics(metrics, *, format="terminal"):
         METRICS_LOGGER.warning("Heatmap not yet implemented")
 
     if format == "terminal":
+        # FIXME This is at the moment completely arbitrary
+        max_col_width = 100
         METRICS_LOGGER.info("Printing metrics")
         #print(metric_col_to_name)
         col_widths = [0] * (len(metric_col_to_name) + 1)
         # first column is the data name, following columnsa are the metrics values
-        top_line = [""] + metric_col_to_name
-        for i, tl in enumerate(top_line):
-            col_widths[i] = max(col_widths[i], len(tl))
+        top_line = ["DATA"] + metric_col_to_name
+        for i, _ in enumerate(top_line):
+            col_widths[i] = max(col_widths[i], min(len(top_line[i]), max_col_width))
+            if len(top_line[i]) > max_col_width:
+                # trim
+                top_line[i] = top_line[i][:max_col_width]
         lines = [top_line]
         for name, values in metrics.items():
             line = [name] + [""] * len(metric_col_to_name)
             for m_name, m_value in values.items():
-                line[metric_name_to_col[m_name] + 1] = m_value
-            for  i, tl in enumerate(line):
-                col_widths[i] = max(col_widths[i], len(str(line[i])))
+                line[metric_name_to_col[m_name] + 1] = str(m_value)
+            for  i, _ in enumerate(line):
+                col_widths[i] = max(col_widths[i], min(len(str(line[i])), max_col_width))
+                if len(str(line[i])) > max_col_width:
+                    # trim
+                    line[i] = str(line[i])[:max_col_width]
             lines.append(line)
 
         # now we have it and can construct the output

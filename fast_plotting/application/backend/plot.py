@@ -20,7 +20,7 @@ import plotly
 
 from fast_plotting.logger import get_logger
 from fast_plotting.config import read_config, configure_from_sources
-from fast_plotting.registry import load_source_from_config
+from fast_plotting.registry import DataRegistry
 from fast_plotting.data.data import combine_data_wrappers_df
 
 BACKEND_LOGGER = get_logger("Backend")
@@ -64,8 +64,10 @@ def add_source(request):
 def load_from_source():
     if WRAPPER.config:
         WRAPPER.config = None
-    WRAPPER.config = configure_from_sources([s[1] for s in WRAPPER.sources], [s[2] for s in WRAPPER.sources])
-
+    WRAPPER.config = []
+    for s in WRAPPER.sources:
+        config = configure_from_sources([s[1]], [s[2]])
+        WRAPPER.config.append(config)
 
 def remove_sources():
     WRAPPER.config = None
@@ -73,8 +75,13 @@ def remove_sources():
 
 
 def plot(selected_sources):
+    registry = [DataRegistry() for _ in WRAPPER.config]
+    data_wrappers = []
+    for s in selected_sources:
+        registry[s[0]].load_source_from_config(WRAPPER.config[s[0]], s[1], True)
+        data_wrappers.append(registry[s[0]].get(s[1]))
     # returns the JSONs
-    data_wrappers = [load_source_from_config(WRAPPER.config, s, True) for s in selected_sources]
+    #data_wrappers = [registry.get(s) for s in selected_sources]
 
     df = combine_data_wrappers_df(*data_wrappers)
 
@@ -93,9 +100,10 @@ def do():
     if WRAPPER.config:
         full_source_names = {s[1]: i for i, s in enumerate(WRAPPER.sources)}
         identifiers = [[] for _ in full_source_names]
-        for batch in WRAPPER.config.get_sources():
-            ind = full_source_names[batch["filepath"]]
-            identifiers[ind].append(batch["identifier"])
+        for ident, conf in zip(identifiers, WRAPPER.config):
+            for batch in conf.get_sources():
+                #ind = full_source_names[batch["filepath"]]
+                ident.append(batch["identifier"])
         # re-arrange so that we can make a nice column
         max_length = max(len(ident) for ident in identifiers)
         # for ident in identifiers:
@@ -103,7 +111,7 @@ def do():
         identifiers_tuples = []
         for ident in zip(*identifiers):
             identifiers_tuples.append([i for i in ident])
-        g.source_identifiers = {"source_paths": [(s[0], i) for s, i in zip(WRAPPER.sources, identifiers)]}
+        g.source_identifiers = {"source_paths": [(s[0], i, j) for j, (s, i) in enumerate(zip(WRAPPER.sources, identifiers))]}
         g.width = 100 / len(identifiers)
     if request.method == 'POST':
         if request.form["btn"] == "Add":
@@ -133,10 +141,15 @@ def plots():
     plots = []
     if request.method == 'POST':
         BACKEND_LOGGER.info("PLOT")
-        selected = request.form.getlist('top5')
-        print(selected)
-        plots.append(plot(selected))
-        print(plots)
+        selected_all = []
+        for i, _ in enumerate(WRAPPER.sources):
+            selected = request.form.getlist(str(i))
+            for s in selected:
+                selected_all.append((i, s))
+                print(i, s)
+            #print(selected)
+        plots.append(plot(selected_all))
+        #print(plots)
 
     #plots = plots[0] if plots else
     return render_template('plot/plots.html', plotsJSON=plots[0] if plots else [])

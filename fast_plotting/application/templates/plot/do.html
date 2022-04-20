@@ -73,7 +73,7 @@
     <div class="w3-container w3-center w3-padding w3-light-grey" style="width:{{ g.width }}%; float: left">
     <b>{{ si[0] }}</b>
     <br />
-      <select id="top5" name="top5" size="10" multiple form="select_plot">
+      <select id="{{ si[2] }}" name="{{ si[2] }}" size="10" multiple form="select_plot">
 {% for i in si[1] %}
         <option>{{ i }}</option>
 {% endfor %}

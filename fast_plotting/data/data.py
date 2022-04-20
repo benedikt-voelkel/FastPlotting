@@ -114,7 +114,7 @@ class DataWrapper:
 
     def get_as_table(self):
         x, y, z = self.get_as_scatter()
-        return pd.DataFrame({"tag": [self.name for _ in x], "x": x, "y": y, "z": z})
+        return pd.DataFrame({"tag": [f"{self.name}_{self.data_annotations.label}" for _ in x], "x": x, "y": y, "z": z})
 
 
 def combine_data_wrappers_df(*data_wrappers):

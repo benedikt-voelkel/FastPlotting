@@ -117,6 +117,8 @@ def configure_from_sources(sources, labels=None, **kwargs):
     if not sources:
         CONFIG_LOGGER.error("There are no sources to configure from")
         return ConfigInterface()
+    if not labels:
+        labels = [str(i) for i, _ in enumerate(sources)]
     if labels and len(sources) != len(labels):
         CONFIG_LOGGER.critical("Need same number of sources and labels, %d vs. %d", len(source), len(labels))
     extract_funcs = (extract_from_source,)
@@ -136,7 +138,7 @@ def configure_from_sources(sources, labels=None, **kwargs):
 
         for b in batches:
             b["label"] = l
-            b["identifier"] = f"{b['identifier']}_{i}"
+            b["identifier"] = f"{b['identifier']}"
             config.add_data_source(**b)
 
     return config

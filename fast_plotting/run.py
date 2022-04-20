@@ -5,7 +5,7 @@ import argparse
 from time import sleep
 
 from fast_plotting.config import read_config, configure_from_sources
-from fast_plotting.registry import read_from_config, load_source_from_config, get_from_registry
+from fast_plotting.registry import DataRegistry
 from fast_plotting.plot.utils import plot_auto, add_plot_for_each_source, add_overlay_plot_for_sources
 from fast_plotting.metrics.metrics import print_metrics, compute_metrics
 
@@ -17,7 +17,6 @@ def plot(args):
     """Plot from cmd args"""
     MAIN_LOGGER.info("Run")
     config = read_config(args.config)
-    read_from_config(config)
     plot_auto(config, args.output, args.all_in_one)
     MAIN_LOGGER.info("Done")
     return 0
@@ -44,7 +43,6 @@ def monitor(args):
     config = read_config(args.config)
     try:
         while True:
-            read_from_config(config, True, wait_for_source=True)
             plot_auto(config, args.output, True, accept_sources_not_found=True)
             sleep(5)
     except KeyboardInterrupt:
@@ -57,10 +55,26 @@ def inspect(args):
     config.print_plots()
 
 def metrics(args):
-    config = read_config(args.config)
-    for s in args.sources:
-        load_source_from_config(config, s)
-    print_metrics(compute_metrics([get_from_registry(s) for s in args.sources], args.metrics, args.compare), format=args.format)
+    if args.sources:
+        if len(args.sources) > 2:
+            MAIN_LOGGER.critical("Can only handle 2 sources max for comparison")
+        registries = []
+        for s in args.sources:
+            config = configure_from_sources([s])
+            reg = DataRegistry()
+            if not args.identifiers:
+                reg.read_from_config(config, load_all=True)
+                args.identifiers = [b["identifier"] for b in config.get_sources()]
+            else:
+                for i in args.identifiers:
+                    reg.load_source_from_config(config, i)
+            registries.append(reg)
+
+    metrics = {}
+    for i in args.identifiers:
+        input = [r.get(i) for r in registries]
+        compute_metrics(input, args.metrics, args.compare, add_to_metrics=metrics)
+    print_metrics(metrics, format=args.format)
 
 def main():
     """
@@ -76,11 +90,13 @@ def main():
     main_parser = argparse.ArgumentParser("FastPlotting")
     sub_parsers = main_parser.add_subparsers(dest="command")
 
-    metrics_parser = sub_parsers.add_parser("metric", parents=[common_debug_parser, common_config_parser])
+    metrics_parser = sub_parsers.add_parser("metric", parents=[common_debug_parser])
     metrics_parser.set_defaults(func=metrics)
     metrics_parser.add_argument("--compare", action="store_true", help="compare all to first")
     metrics_parser.add_argument("-s", "--sources", nargs="+", help="source identifiers to be compared")
     metrics_parser.add_argument("-m", "--metrics", nargs="+", help="metrics to be applied")
+    metrics_parser.add_argument("-i", "--identifiers", nargs="+", help="names of identifiers in sources")
+    metrics_parser.add_argument("--thresh", nargs="+", help="if --compare, thresholds are used to indicate whether or not data is compatible (has to have same number of args --metrics, for no comparison pass None)")
     metrics_parser.add_argument("--format", help="in which format to output the metrics", default="terminal", choices=["terminal", "json", "heatmap"])
 
     plot_parser = sub_parsers.add_parser("plot", parents=[common_debug_parser])

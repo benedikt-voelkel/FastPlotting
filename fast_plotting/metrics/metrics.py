@@ -18,12 +18,12 @@ def integral(data_wrapper):
         be = bin_edges[0]
         weights = be[1:] - be[:-1]
         # take 0'th entry cause the return value is a 1D numpy according to input shape and return of np.dot
-        return np.dot(values, weights)[0]
+        return np.dot(values.flatten(), weights.flatten())
     be_x = bin_edges[0][1:] - bin_edges[0][:-1]
     be_y = bin_edges[1][1:] - bin_edges[1][:-1]
     weights = np.outer(be_x, be_y).flatten()
     # take 0'th entry cause the return value is a 1D numpy according to input shape and return of np.dot
-    return np.dot(values.flatten(), weights)[0]
+    return np.dot(values.flatten(), weights)
 
 def _norm(data_wrapper):
     if not data_wrapper:
@@ -70,9 +70,17 @@ def norm(data_wrapper):
 
 def _chi2_numpy(norm_1, norm_2):
     try:
-        return np.sum((norm_1 - norm_2)**2 / (norm_1 + norm_2)) / 2
+        num = (norm_1 - norm_2)**2
+        den = norm_1 + norm_2
+        ind = np.nonzero(den)
+        num = num[ind]
+        den = den[ind]
+        if not len(num):
+            METRICS_LOGGER.warning("Empty data")
+            return None
+        return np.sum(num / den) / 2
     except ZeroDivisionError:
-        METRICS_LOGGER.warning("Empty histograms, division by 0")
+        METRICS_LOGGER.warning("Division by 0")
         return None
 
 def _chi2(data_wrapper_1, data_wrapper_2):
@@ -80,7 +88,7 @@ def _chi2(data_wrapper_1, data_wrapper_2):
     return _chi2_numpy(norm_1, norm_2)
 
 def chi2(data_wrapper_1, data_wrapper_2):
-    if data_wrapper_1.get_chi2() != data_wrapper_2.get_shape():
+    if data_wrapper_1.get_shape() != data_wrapper_2.get_shape():
         METRICS_LOGGER.warning("Different shapes of data")
         return None
     repr, dim = data_wrapper_1.preferred_representation()
@@ -92,6 +100,9 @@ def _compare_single_metric(func, data_wrapper_1, data_wrapper_2):
     res1, res2 = (func(data_wrapper_1), func(data_wrapper_2))
     if res1 is None or res2 is None:
         return None
+    if res1 == 0.0:
+        METRICS_LOGGER.warning("Comparison data integral is 0")
+        return np.inf
     return res2 / res1
 
 def _compare_metric(func, data_wrapper_1, data_wrapper_2):
@@ -122,11 +133,13 @@ METRICS = {"chi2": chi2,
            "integral": integral}
 
 def compute_metrics(data_wrappers, metrics_names, compare=False, *, add_to_metrics=None):
+
+    collect_all = {} if add_to_metrics is None else add_to_metrics
+
     if len(data_wrappers) < 2 and compare:
         METRICS_LOGGER.warning("Only one batch of data was passed, nothing to compare")
-        return None
+        return collect_all
 
-    collect_all = {} if not add_to_metrics else add_to_metrics
     if not compare:
         for dw in data_wrappers:
             collect = {}
@@ -135,7 +148,6 @@ def compute_metrics(data_wrappers, metrics_names, compare=False, *, add_to_metri
                     METRICS_LOGGER.warning("Metric name %s unknown, skip...", mn)
                     continue
                 collect[mn] = _single_metric(METRICS[mn], dw)
-                #print(collect[mn])
             collect_all[dw.name] = collect
         return collect_all
 
@@ -146,7 +158,7 @@ def compute_metrics(data_wrappers, metrics_names, compare=False, *, add_to_metri
                 METRICS_LOGGER.warning("Metric name %s unknown, skip...", mn)
                 continue
             collect[mn] = _compare_metric(METRICS[mn], dw[0], dw[1])
-        collect_all[f"{ref.name}__VS__{dw.name}"] = collect
+        collect_all[f"{dw[0].name}__VS__{dw[1].name}"] = collect
     return collect_all
 
 def print_metrics(metrics, *, format="terminal"):
@@ -179,20 +191,28 @@ def print_metrics(metrics, *, format="terminal"):
         METRICS_LOGGER.warning("Heatmap not yet implemented")
 
     if format == "terminal":
+        # FIXME This is at the moment completely arbitrary
+        max_col_width = 100
         METRICS_LOGGER.info("Printing metrics")
         #print(metric_col_to_name)
         col_widths = [0] * (len(metric_col_to_name) + 1)
         # first column is the data name, following columnsa are the metrics values
-        top_line = [""] + metric_col_to_name
-        for i, tl in enumerate(top_line):
-            col_widths[i] = max(col_widths[i], len(tl))
+        top_line = ["DATA"] + metric_col_to_name
+        for i, _ in enumerate(top_line):
+            col_widths[i] = max(col_widths[i], min(len(top_line[i]), max_col_width))
+            if len(top_line[i]) > max_col_width:
+                # trim
+                top_line[i] = top_line[i][:max_col_width]
         lines = [top_line]
         for name, values in metrics.items():
             line = [name] + [""] * len(metric_col_to_name)
             for m_name, m_value in values.items():
-                line[metric_name_to_col[m_name] + 1] = m_value
-            for  i, tl in enumerate(line):
-                col_widths[i] = max(col_widths[i], len(str(line[i])))
+                line[metric_name_to_col[m_name] + 1] = str(m_value)
+            for  i, _ in enumerate(line):
+                col_widths[i] = max(col_widths[i], min(len(str(line[i])), max_col_width))
+                if len(str(line[i])) > max_col_width:
+                    # trim
+                    line[i] = str(line[i])[:max_col_width]
             lines.append(line)
 
         # now we have it and can construct the output

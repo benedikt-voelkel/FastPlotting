@@ -4,6 +4,7 @@ from fast_plotting.plot.plot import Plotter
 from fast_plotting.io import make_dir
 from fast_plotting.logger import get_logger
 from fast_plotting.plot import plottypes
+from fast_plotting.registry import DataRegistry
 
 PLOT_LOGGER = get_logger("Plot")
 
@@ -34,7 +35,9 @@ def plot_auto(config, out_dir="./", all_in_one=False, *, accept_sources_not_foun
         PLOT_LOGGER.warning("Nothing enabled, nothing to plot")
         return
     make_dir(out_dir)
-    plotter = Plotter(accept_sources_not_found=accept_sources_not_found)
+    registry = DataRegistry()
+    registry.read_from_config(config, accept_sources_not_found, wait_for_source=accept_sources_not_found)
+    plotter = Plotter(registry, accept_sources_not_found=accept_sources_not_found)
     collect_fo_all_in_one = []
     for b in batches:
         plot_properties = {"title": b.get("title", b["identifier"])}

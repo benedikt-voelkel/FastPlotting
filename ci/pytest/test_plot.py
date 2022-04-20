@@ -5,7 +5,7 @@ from glob import glob
 
 from fast_plotting.config import read_config, configure_from_sources
 from fast_plotting.plot.utils import plot_auto, add_plot_for_each_source
-from fast_plotting.registry import read_from_config
+from fast_plotting.registry import DataRegistry
 
 path = dirname(realpath(__file__))
 module_name = "common_test_utils"
@@ -24,7 +24,6 @@ def test_make_plot_from_source(change_test_dir):
         config = configure_from_sources((file_name,), ("label",))
         add_plot_for_each_source(config)
         config.enable_plots("all")
-        read_from_config(config)
         plot_auto(config, plot_output_dir)
         plot_auto(config, plot_output_dir, True)
         n_plots_config = len(config.get_plots())

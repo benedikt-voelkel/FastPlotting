@@ -1,14 +1,19 @@
 """Handle ROOT as data source"""
 from os.path import exists
 import numpy as np
+import gc
 
-from ROOT import TFile, TH1, TH2, TH3, TDirectory, TList
+from ROOT import TFile, TH1, TH2, TH3, TDirectory, TList, gROOT, gObjectTable
 
 from fast_plotting.data.data import DataAnnotations
 from fast_plotting.logger import get_logger
 
 ROOT_LOGGER = get_logger("ROOTSources")
 
+# This is used for buffering loaded TDirectories/TFiles etc to avoid re-loading them again and again.
+# Unfortunately we cannot guarantee that the memeory is cleaned everytime we open, load objects from
+# and close ROOT files.
+FILE_BUFFER = {}
 
 def convert_to_numpy_1d(histogram):
     """Convert to the numpy for TH1"""
@@ -67,7 +72,7 @@ def convert_to_numpy(histogram):
         return convert_to_numpy_2d(histogram)
     return convert_to_numpy_1d(histogram)
 
-def get_histogram(root_object, root_path_list, *, wait_for_source=False):
+def get_histogram(root_object, root_path_list, *, wait_for_source=False, buffer=None):
     """Extract histogram from ROOT object
 
     Args:
@@ -86,7 +91,13 @@ def get_histogram(root_object, root_path_list, *, wait_for_source=False):
                     ROOT_LOGGER.critical("Object not found")
                 return None
             return h
-        return get_histogram(root_object.Get(next_in_list), root_path_list[1:], wait_for_source=wait_for_source)
+        # Use the buffer here to store and load TDirectory objects if they exist already
+        if buffer is not None:
+            o = root_object.Get(next_in_list) if next_in_list not in buffer else buffer[next_in_list]
+            buffer[next_in_list] = o
+        else:
+            o = root_object.Get(next_in_list)
+        return get_histogram(o, root_path_list[1:], wait_for_source=wait_for_source, buffer=buffer)
     if isinstance(root_object, TList):
         this_list = None
         for l in root_object:
@@ -97,7 +108,7 @@ def get_histogram(root_object, root_path_list, *, wait_for_source=False):
                 break
         if not this_list:
             ROOT_LOGGER.critical("Object not found")
-        return get_histogram(this_list, root_path_list[1:], wait_for_source=wait_for_source)
+        return get_histogram(this_list, root_path_list[1:], wait_for_source=wait_for_source, buffer=buffer)
     if not wait_for_source:
         ROOT_LOGGER.critical("Cannot handle ROOT object")
     return None
@@ -113,10 +124,20 @@ def read(filepath, histogram_path, *, wait_for_source=False):
             ROOT_LOGGER.critical("File %s doesn't seem to exist.", filepath)
         return None, None, None, None
 
-    f = TFile.Open(filepath, "READ")
+    # Use this filebuffer to not open files more than once
+    if filepath not in FILE_BUFFER:
+        FILE_BUFFER[filepath] = {}
+    buffer = FILE_BUFFER[filepath]
+
+    if filepath not in buffer:
+        f = TFile.Open(filepath, "READ")
+        buffer[filepath] = f
+    else:
+        f = buffer[filepath]
 
     histogram_path_list = histogram_path.split("/")
-    histogram = get_histogram(f, histogram_path_list, wait_for_source=wait_for_source)
+    # Here the buffer is passed as well to collect further TDirectory s
+    histogram = get_histogram(f, histogram_path_list, wait_for_source=wait_for_source, buffer=buffer)
 
     if not histogram:
         if not wait_for_source:
@@ -133,6 +154,8 @@ def read(filepath, histogram_path, *, wait_for_source=False):
 
     # convert to numpy and return together with annotations
     data, uncertainties, bin_edges = convert_to_numpy(histogram)
+    f.Delete(histogram.GetName())
+    #f.Close()
     return data, uncertainties, bin_edges, data_annotations
 
 def extract_impl(root_object, current_path, collect, skip_this_name=False):

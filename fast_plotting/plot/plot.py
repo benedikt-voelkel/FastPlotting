@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from time import time
 
-from fast_plotting.registry import get_from_registry
 from fast_plotting.logger import get_logger
 from fast_plotting.data import datatypes
 from fast_plotting.plot import plottypes
@@ -75,7 +74,10 @@ def finalise_figure(figure, save_path):
     PLOT_LOGGER.debug("Plotted at %s", save_path)
 
 class Plotter:
-    def __init__(self, allow_2d_overlaying=False, *, accept_sources_not_found=False):
+    def __init__(self, registry, allow_2d_overlaying=False, *, accept_sources_not_found=False,):
+        # where the data is
+        self.registry = registry
+        # collecting all data
         self.data_wrappers = []
         # this maps like [[1, 3, 5], [2, 3, 4], [9,3]] where each sub-list conatins the indices of the histogram/function to be plotted. The index of the sub-lists refer to a plot
         self.wrappers_to_plot_mapping = []
@@ -112,7 +114,7 @@ class Plotter:
                 identifies the plot to add to
         """
         allow_2d_overlaying = allow_2d_overlaying if allow_2d_overlaying is not None else self.allow_2d_overlaying
-        data_wrapper = get_from_registry(identifier, accept_not_found=self.accept_sources_not_found)
+        data_wrapper = self.registry.get(identifier, accept_not_found=self.accept_sources_not_found)
         if data_wrapper is None:
             PLOT_LOGGER.warning("Cannot obtain data of identifier %s", identifier)
             return

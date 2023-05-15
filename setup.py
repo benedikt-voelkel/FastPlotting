@@ -7,7 +7,7 @@ setup(
   name='FastPlotting',
 
   # LAST-TAG is a placeholder. Automatically replaced at deploy time with the right tag
-  version='LAST-TAG',
+  version='0.0.1',
 
   description='A plotting framework',
 
